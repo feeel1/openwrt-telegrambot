@@ -11,7 +11,7 @@ VERSION = "1.0.2"
 logger = logging.getLogger(__name__)
 
 async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_data: str = None) -> None:
-    """Menampilkan status koneksi WAN (Internet)."""
+    """Отображает статус WAN-соединения (Интернет)."""
 
     chat_id = update.effective_chat.id
 
@@ -22,18 +22,18 @@ async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_da
             selected_device = parts[2]
 
     try:
-        # Dapatkan IP Publik
+        # Получение публичного IP
         public_ip_proc = await asyncio.create_subprocess_shell(
             'curl -s ifconfig.me',
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
         public_ip_stdout, _ = await public_ip_proc.communicate()
-        public_ip = public_ip_stdout.decode('utf-8').strip() or "Tidak terdeteksi"
+        public_ip = public_ip_stdout.decode('utf-8').strip() or "Не обнаружен"
 
-        # Dapatkan IP Lokal WAN dan Antarmuka WAN
-        wan_interface = "Tidak terdeteksi"
-        wan_ip = "Tidak terdeteksi"
+        # Получение локального WAN IP и WAN интерфейса
+        wan_interface = "Не обнаружен"
+        wan_ip = "Не обнаружен"
         ip_output_proc = await asyncio.create_subprocess_shell(
             'ip -4 addr show | grep -E "inet"',
             stdout=asyncio.subprocess.PIPE,
@@ -49,7 +49,7 @@ async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_da
                     wan_interface = parts[-1]
                     break
 
-        # Dapatkan Gateway beserta Antarmuka
+        # Получение шлюза (Gateway) и интерфейса
         gateway_list = []
         gateway_proc = await asyncio.create_subprocess_shell(
             'ip route | grep default',
@@ -64,9 +64,9 @@ async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_da
                 gateway_ip = parts[parts.index("via") + 1]
                 gateway_interface = parts[parts.index("dev") + 1]
                 gateway_list.append(f"{gateway_interface} = {gateway_ip}")
-        gateway_str = "\n".join(gateway_list) if gateway_list else "Tidak terdeteksi"
+        gateway_str = "\n".join(gateway_list) if gateway_list else "Не обнаружен"
 
-        # Dapatkan DNS berdasarkan tipe (IPv4/IPv6)
+        # Получение DNS по типам (IPv4/IPv6)
         dns_ipv4_list = []
         dns_ipv6_list = []
         dns_proc = await asyncio.create_subprocess_shell(
@@ -89,22 +89,22 @@ async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_da
             dns_str += "ipv4 = " + "\n       ".join(dns_ipv4_list) + "\n"
         if dns_ipv6_list:
             dns_str += "ipv6 = " + "\n       ".join(dns_ipv6_list) + "\n"
-        dns_str = dns_str.strip() if dns_str else "Tidak terdeteksi"
+        dns_str = dns_str.strip() if dns_str else "Не обнаружен"
 
-        # Format respons dengan MarkdownV2
+        # Форматирование ответа с использованием MarkdownV2
         response = (
             f"🌐 **Status WAN**\n"
             f"IP Publik: `{escape_markdown(public_ip, version=2)}`\n"
             f"IP Lokal WAN: `{escape_markdown(wan_ip, version=2)}`\n"
-            f"Antarmuka WAN: `{escape_markdown(wan_interface, version=2)}`\n"
-            f"Gateway:\n`{escape_markdown(gateway_str, version=2)}`\n"
+            f"Интерфейс WAN: `{escape_markdown(wan_interface, version=2)}`\n"
+            f"Шлюз:\n`{escape_markdown(gateway_str, version=2)}`\n"
             f"DNS:\n`{escape_markdown(dns_str, version=2)}`"
         )
         
-        # Buat tombol Kembali
+        # Создание кнопки "Назад"
         keyboard = []
         if selected_device:
-            keyboard.append([InlineKeyboardButton("Kembali", callback_data=f"back_to_device_menu|menu|{selected_device}")])
+            keyboard.append([InlineKeyboardButton("Назад", callback_data=f"back_to_device_menu|menu|{selected_device}")])
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         await context.bot.send_message(
@@ -115,8 +115,8 @@ async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_da
         )
 
     except Exception as e:
-        logger.error(f"Gagal menjalankan perintah /wan: {e}")
+        logger.error(f"Ошибка при выполнении команды /wan: {e}")
         await context.bot.send_message(
             chat_id=chat_id,
-            text="❌ Maaf, terjadi kesalahan saat mengambil status WAN."
+            text="❌ Извините, произошла ошибка при получении статуса WAN."
         )
