@@ -9,31 +9,31 @@ from telegram.ext import ContextTypes
 
 IS_MENU_COMMAND = False
 
-# versi modul
+# версия модуля
 VERSION = "3.5.0"
 
 logger = logging.getLogger(__name__)
 
-# Lokasi skrip force_update.sh
+# Расположение скрипта force_update.sh
 SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FORCE_UPDATE_SCRIPT = os.path.join(SCRIPT_DIR, "force_update.sh")
 
 async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_data: str = None) -> None:
-    """Menangani perintah /force_update untuk memaksa pembaruan."""
+    """Обрабатывает команду /force_update для принудительного обновления."""
     
     chat_id = update.effective_chat.id
     
-    # Kirim pesan notifikasi
-    message = "🚨 **Memaksa pembaruan perangkat saat ini...**"
+    # Отправка уведомления
+    message = "🚨 **Принудительное обновление устройства...**"
     await context.bot.send_message(
         chat_id=chat_id,
         text=message,
         parse_mode='Markdown'
     )
-    logger.info("Perintah /force_update diterima. Memulai skrip pembaruan paksa.")
+    logger.info("Получена команда /force_update. Запуск скрипта принудительного обновления.")
 
-    # Jalankan skrip force_update.sh secara asinkron
+    # Запуск скрипта force_update.sh асинхронно
     subprocess.Popen(['/bin/sh', FORCE_UPDATE_SCRIPT])
     
-    # Hapus baris ini:
+    # Строка остановки приложения удалена по инструкции:
     # await context.application.stop()
