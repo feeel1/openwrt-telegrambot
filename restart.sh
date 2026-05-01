@@ -1,23 +1,23 @@
 #!/bin/sh
 
-echo "Memulai proses restart bot..."
+echo "Запуск процесса перезагрузки бота..."
 
-# Cari ID proses (PID) dari bot.py dan hentikan
+# Поиск ID процесса (PID) bot.py и его остановка
 ps | grep -v 'grep' | grep -q 'python3 /www/assisten/bot/bot.py'
 if [ $? -eq 0 ]; then
   PID=$(ps | grep 'python3 /www/assisten/bot/bot.py' | grep -v 'grep' | awk '{print $1}')
   kill -9 $PID
-  echo "Proses bot.py (PID: $PID) berhasil dihentikan."
+  echo "Процесс bot.py (PID: $PID) успешно остановлен."
 else
-  echo "Proses bot.py tidak ditemukan. Melanjutkan..."
+  echo "Процесс bot.py не найден. Продолжение..."
 fi
 
-# Tambahkan jeda sebentar untuk memastikan proses benar-benar mati
+# Небольшая пауза, чтобы убедиться, что процесс полностью завершен
 sleep 3
 
-# Mulai ulang bot dengan run_bot.sh
-echo "Memulai ulang bot..."
+# Перезапуск бота через run_bot.sh
+echo "Перезапуск бота..."
 /www/assisten/bot/run_bot.sh start
 
-echo "restart.sh selesai."
+echo "restart.sh завершен."
 exit 0
