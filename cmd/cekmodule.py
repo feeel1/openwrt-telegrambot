@@ -12,10 +12,10 @@ IS_MENU_COMMAND = False
 logger = logging.getLogger(__name__)
 
 async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_data: str = None) -> None:
-    """Menampilkan daftar semua modul yang dimuat."""
+    """Отображает список всех загруженных модулей."""
     
     if not context.application.bot_data.get('menu_commands') and not context.application.bot_data.get('hidden_commands'):
-        await update.message.reply_text("❌ Tidak ada modul yang terdeteksi.")
+        await update.message.reply_text("❌ Модули не обнаружены.")
         return
 
     all_modules = {
@@ -24,12 +24,12 @@ async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_da
     }
     sorted_module_names = sorted(all_modules.keys())
 
-    response = "📜 *Daftar Modul yang Dimuat:*\n\n"
+    response = "📜 *Список загруженных модулей:*\n\n"
     
     for module_name in sorted_module_names:
         module = all_modules[module_name]
         
-        version = getattr(module, 'VERSION', 'Tidak ada')
+        version = getattr(module, 'VERSION', 'Нет данных')
         is_menu_command = getattr(module, 'IS_MENU_COMMAND', True)
         status = "MENU" if is_menu_command else "CMD"
         
