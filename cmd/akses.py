@@ -5,18 +5,18 @@ import logging
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, Message
 from telegram.ext import ContextTypes
 
-# versi modul
+# версия модуля
 VERSION = "3.5.0"
 
 logger = logging.getLogger(__name__)
 
-# Konfigurasi file akses
+# Конфигурация файлов доступа
 SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AKSES_FILE = os.path.join(SCRIPT_DIR, "akses.txt")
 AKSES_EDIT_FILE = os.path.join(SCRIPT_DIR, "akses.txt.tmp")
 
 async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_data: str) -> None:
-    """Fungsi utama untuk mengelola user yang diizinkan."""
+    """Основная функция для управления разрешенными пользователями."""
     query = update.callback_query
     
     command_parts = command_data.split('|')
@@ -54,12 +54,12 @@ async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_da
     return
 
 async def show_access_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_device: str, new_message=False):
-    """Menampilkan menu untuk mengelola user yang diizinkan."""
+    """Отображает меню управления разрешенными пользователями.""""
     keyboard = [
-        [InlineKeyboardButton("Lihat User", callback_data=f"akses|view|{selected_device}")],
-        [InlineKeyboardButton("Tambah User Saat Ini", callback_data=f"akses|add_self|{selected_device}")],
-        [InlineKeyboardButton("Tambah User Manual", callback_data=f"akses|add_manual|{selected_device}")],
-        [InlineKeyboardButton("Kembali", callback_data=f"back_to_device_menu|{selected_device}")]
+        [InlineKeyboardButton("Просмотреть пользователей", callback_data=f"akses|view|{selected_device}")],
+        [InlineKeyboardButton("Добавить себя", callback_data=f"akses|add_self|{selected_device}")],
+        [InlineKeyboardButton("Добавить ID вручную", callback_data=f"akses|add_manual|{selected_device}")],
+        [InlineKeyboardButton("Назад", callback_data=f"back_to_device_menu|{selected_device}")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -75,7 +75,7 @@ async def show_access_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, s
                 reply_markup=reply_markup
             )
     except Exception as e:
-        logger.error(f"Gagal menampilkan menu akses: {e}")
+        logger.error(f"Ошибка при отображении меню доступа: {e}")
         message = await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text="Pilih opsi manajemen user:",
@@ -84,33 +84,33 @@ async def show_access_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, s
     return message
 
 async def view_users(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_device: str, new_message=False):
-    """Membaca dan menampilkan daftar user yang diizinkan, dengan tombol hapus."""
+    """Читает и выводит список разрешенных пользователей с кнопками удаления."""
     try:
         with open(AKSES_FILE, 'r') as f:
             users = [line.strip() for line in f if line.strip() and not line.startswith('#')]
         
         keyboard = []
         if users:
-            response_text = "Daftar User yang Diizinkan:"
+            response_text = "Список разрешенных пользователей:"
             for user_id_str in users:
                 user_id = int(user_id_str)
                 if user_id != update.effective_user.id:
                     keyboard.append(
-                        [InlineKeyboardButton(f"Hapus User ID {user_id}", callback_data=f"akses|del_user|{selected_device}|{user_id_str}")]
+                        [InlineKeyboardButton(f"Удалить User ID {user_id}", callback_data=f"akses|del_user|{selected_device}|{user_id_str}")]
                     )
                 else:
                     keyboard.append(
-                        [InlineKeyboardButton(f"User ID {user_id} (Anda)", callback_data=f"ignore_self")]
+                        [InlineKeyboardButton(f"User ID {user_id} (Вы)", callback_data=f"ignore_self")]
                     )
         else:
-            response_text = "Tidak ada user yang terdaftar."
+            response_text = "Список пользователей пуст."
         
         keyboard.append([InlineKeyboardButton("Kembali", callback_data=f"akses|menu|{selected_device}")])
         reply_markup = InlineKeyboardMarkup(keyboard)
 
     except FileNotFoundError:
-        response_text = f"File `{AKSES_FILE}` tidak ditemukan."
-        reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("Kembali", callback_data=f"akses|menu|{selected_device}")]])
+        response_text = f"File `{AKSES_FILE}` не найден."
+        reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("Назад", callback_data=f"akses|menu|{selected_device}")]])
     
     try:
         if update.callback_query and not new_message:
@@ -126,7 +126,7 @@ async def view_users(update: Update, context: ContextTypes.DEFAULT_TYPE, selecte
                 parse_mode='Markdown'
             )
     except Exception as e:
-        logger.error(f"Gagal menampilkan daftar user: {e}")
+        logger.error(f"Ошибка при отображении списка пользователей: {e}")
         message = await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=response_text,
@@ -136,7 +136,7 @@ async def view_users(update: Update, context: ContextTypes.DEFAULT_TYPE, selecte
     return message
 
 async def add_user_prompt(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_device: str):
-    """Meminta user ID untuk ditambahkan secara manual."""
+    """Запрашивает ID пользователя для добавления вручную."""
     try:
         await update.callback_query.message.delete()
     except Exception:
@@ -150,19 +150,19 @@ async def add_user_prompt(update: Update, context: ContextTypes.DEFAULT_TYPE, se
 
     message = await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="Kirimkan user ID yang ingin Anda tambahkan (contoh: 1234567890).",
+        text="Отправьте ID пользователя, который хотите добавить (например: 1234567890).",
         reply_markup=reply_markup
     )
     return message
 
 async def handle_user_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Menangani input teks dari user, khususnya untuk menambah user ID."""
+    """Обрабатывает текстовый ввод пользователя, в частности для добавления ID."""
     if 'state' in context.user_data and context.user_data['state'] == 'await_add_user_id':
         user_input = update.message.text
         
         try:
             if not user_input.isdigit():
-                raise ValueError("Input harus berupa angka.")
+                raise ValueError("Ввод должен быть числом.")
 
             user_id = int(user_input)
             
@@ -175,20 +175,20 @@ async def handle_user_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
             with open(AKSES_FILE, 'r+') as f:
                 content = f.read()
                 if str(user_id) in [line.strip() for line in content.splitlines()]:
-                    response_text = f"✅ User ID `{user_id}` sudah ada."
+                    response_text = f"✅ User ID `{user_id}` уже существует."
                 else:
                     f.write(f"\n{user_id}")
-                    response_text = f"✅ User ID `{user_id}` berhasil ditambahkan."
+                    response_text = f"✅ User ID `{user_id}` успешно добавлен."
                     
             from bot import load_allowed_users
             load_allowed_users()
             
         except ValueError as e:
-            response_text = f"❌ Input `{user_input}` tidak valid. Mohon masukkan angka saja."
+            response_text = f"❌ Некорректный ввод `{user_input}` Пожалуйста, введите только цифры."
         except Exception as e:
-            response_text = f"❌ Terjadi kesalahan: `{e}`"
+            response_text = f"❌ Произошла ошибка: `{e}`"
         
-        keyboard = [[InlineKeyboardButton("Kembali ke menu Akses", callback_data=f"akses|menu|{selected_device}")]]
+        keyboard = [[InlineKeyboardButton("Вернуться в меню доступа", callback_data=f"akses|menu|{selected_device}")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await update.effective_message.reply_text(
@@ -198,23 +198,23 @@ async def handle_user_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 async def add_user(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_device: str):
-    """Menambahkan user ID saat ini ke file akses."""
+    """Добавляет ID текущего пользователя в файл доступа."""
     user_id_to_add = update.effective_user.id
     
     try:
         with open(AKSES_FILE, 'r+') as f:
             lines = f.readlines()
             if str(user_id_to_add) in [line.strip() for line in lines]:
-                response_text = f"✅ User ID `{user_id_to_add}` sudah ada."
+                response_text = f"✅ User ID `{user_id_to_add}` уже существует."
             else:
                 f.write(f"\n{user_id_to_add}")
-                response_text = f"✅ User ID `{user_id_to_add}` berhasil ditambahkan."
+                response_text = f"✅ User ID `{user_id_to_add}` успешно добавлен."
         
         from bot import load_allowed_users
         load_allowed_users()
         
     except Exception as e:
-        response_text = f"❌ Terjadi kesalahan saat menambah user: `{e}`"
+        response_text = f"❌ Ошибка при добавлении пользователя: `{e}`"
 
     try: await update.callback_query.message.delete()
     except Exception: pass
@@ -229,11 +229,11 @@ async def add_user(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_
     )
 
 async def delete_user(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id_to_del: str, selected_device: str):
-    """Menghapus user ID dari file akses."""
+    """Удаляет ID пользователя из файла доступа."""
     try:
         user_id = int(user_id_to_del)
         if user_id == update.effective_user.id:
-            response_text = "❌ Anda tidak dapat menghapus diri sendiri."
+            response_text = "❌ Вы не можете удалить самого себя."
         else:
             with open(AKSES_FILE, 'r') as infile, open(AKSES_EDIT_FILE, 'w') as outfile:
                 removed = False
@@ -245,15 +245,15 @@ async def delete_user(update: Update, context: ContextTypes.DEFAULT_TYPE, user_i
             os.replace(AKSES_EDIT_FILE, AKSES_FILE)
             
             if removed:
-                response_text = f"✅ User ID `{user_id}` berhasil dihapus."
+                response_text = f"✅ User ID `{user_id}` успешно удален."
             else:
-                response_text = f"❌ User ID `{user_id}` tidak ditemukan."
+                response_text = f"❌ User ID `{user_id}` не найден."
             
             from bot import load_allowed_users
             load_allowed_users()
 
     except Exception as e:
-        response_text = f"❌ Terjadi kesalahan saat menghapus user: `{e}`"
+        response_text = f"❌ Ошибка при удалении пользователя: `{e}`"
 
     try: await update.callback_query.message.delete()
     except Exception: pass
