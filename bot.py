@@ -39,16 +39,16 @@ ACTIVE_DEVICES = {DEVICE_ID}
 LAST_SENT_PRESENCE_TEXT = None
 
 def get_token(filename=TOKEN_FILE):
-    """Membaca token bot dari file."""
+    """Читает токен бота из файла."""
     try:
         with open(filename, "r") as f:
             return f.read().strip()
     except FileNotFoundError:
-        logger.error(f"File {filename} tidak ditemukan.")
+        logger.error(f"Файл {filename} не найден.")
         return None
 
 def load_allowed_users(filename=AKSES_FILE):
-    """Membaca user ID yang diizinkan dari file."""
+    """Читает разрешенные ID пользователей из файла."""
     global ALLOWED_USERS
     new_users = set()
     if os.path.exists(filename):
@@ -59,43 +59,43 @@ def load_allowed_users(filename=AKSES_FILE):
                     try:
                         new_users.add(int(line))
                     except ValueError:
-                        logger.warning(f"ID pengguna tidak valid di {filename}: {line}")
+                        logger.warning(f"Некорректный ID пользователя в {filename}: {line}")
     if new_users != ALLOWED_USERS:
         ALLOWED_USERS = new_users
-        logger.info(f"Daftar user ID yang diizinkan diperbarui: {ALLOWED_USERS}")
+        logger.info(f"Список разрешенных ID обновлен: {ALLOWED_USERS}")
 
 def check_access(func):
-    """Decorator untuk memeriksa apakah pengguna memiliki akses."""
+    """Декоратор для проверки наличия доступа у пользователя."""
     @wraps(func)
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
         load_allowed_users()
         user_id = update.effective_user.id
         if user_id not in ALLOWED_USERS:
-            logger.warning(f"Akses ditolak untuk user ID: {user_id}")
+            logger.warning(f"Доступ запрещен для пользователя с ID:{user_id}")
             await update.effective_message.reply_text(
-                "❌ Maaf, Anda tidak memiliki izin untuk mengakses bot ini."
+                "❌ Извините, у вас нет прав для доступа к этому боту"
             )
             return
         return await func(update, context, *args, **kwargs)
     return wrapper
 
 def process_new_file(filepath):
-    """Mengonversi file ke format Unix dan menambahkan izin eksekusi."""
+    """Конвертирует файл в формат Unix и добавляет права на выполнение."""
     try:
         subprocess.run(['dos2unix', filepath], check=True, capture_output=True)
         os.chmod(filepath, os.stat(filepath).st_mode | 0o111)
-        logger.info(f"Berhasil memproses (dos2unix, chmod +x) file: {filepath}")
+        logger.info(f"Файл успешно обработан (dos2unix, chmod +x) file: {filepath}")
         return True
     except subprocess.CalledProcessError as e:
-        logger.error(f"Gagal memproses file {filepath}: {e.stderr.decode().strip()}")
+        logger.error(f"Ошибка при обработке файла {filepath}: {e.stderr.decode().strip()}")
     except Exception as e:
-        logger.error(f"Gagal memproses file {filepath}: {e}")
+        logger.error(f"Ошибка при обработке файла {filepath}: {e}")
     return False
 
 def load_commands(application: Application):
-    """Memuat semua skrip Python dari direktori 'cmd' dan memisahkan perintah menu."""
+    """Загружает все Python-скрипты из директории 'cmd' и разделяет команды меню."""
     if not os.path.isdir(CMD_FOLDER):
-        logger.error(f"Direktori '{CMD_FOLDER}' tidak ditemukan.")
+        logger.error(f"Директория '{CMD_FOLDER}' не найдена.")
         return
 
     application.bot_data['menu_commands'] = {}
@@ -110,7 +110,7 @@ def load_commands(application: Application):
                 try:
                     spec = importlib.util.spec_from_file_location(f"cmd.{module_name}", filepath)
                     if spec is None:
-                        raise ImportError(f"Could not load module {module_name} from {filepath}")
+                        raise ImportError(f"Не удалось загрузить модуль{module_name} из {filepath}")
                     module = importlib.util.module_from_spec(spec)
                     sys.modules[f"cmd.{module_name}"] = module
                     spec.loader.exec_module(module)
@@ -119,25 +119,25 @@ def load_commands(application: Application):
 
                     if hasattr(module, 'execute'):
                         application.add_handler(CommandHandler(module_name, check_access(module.execute)))
-                        logger.info(f"Perintah dimuat: /{module_name}")
+                        logger.info(f"Команда загружена: /{module_name}")
 
                         is_menu_command = getattr(module, 'IS_MENU_COMMAND', True)
                         if is_menu_command:
                             application.bot_data['menu_commands'][module_name] = module
-                            logger.info(f"Perintah '{module_name}' ditambahkan ke menu.")
+                            logger.info(f"Команда '{module_name}' обавлена в меню.")
                         else:
                             application.bot_data['hidden_commands'][module_name] = module
-                            logger.info(f"Perintah '{module_name}' tidak akan tampil di menu.")
+                            logger.info(f"Команда '{module_name}' tскрыта из меню.")
                     else:
-                        logger.info(f"Modul '{module_name}' dimuat, tetapi tidak memiliki CommandHandler.")
+                        logger.info(f"Модуль '{module_name}' загружен, но не содержит CommandHandler (execute).")
                 except ImportError as e:
-                    logger.error(f"Gagal memuat modul '{module_name}': {e}")
+                    logger.error(f"Ошибка загрузки модуля '{module_name}': {e}")
                 except Exception as e:
-                    logger.error(f"Kesalahan tak terduga saat memuat modul '{module_name}': {e}")
+                    logger.error(f"Непредвиденная ошибка при загрузке модуля '{module_name}': {e}")
 
-# --- Fungsi Menu & Handler ---
+# --- Функции Меню и Обработчики ---
 async def send_presence(context: ContextTypes.DEFAULT_TYPE):
-    """Mengirim atau mengedit pesan 'ACTIVE' berdasarkan perubahan status."""
+    """Отправляет или редактирует сообщение 'ACTIVE' в зависимости от статуса устройства."""
     global ACTIVE_DEVICES, LAST_SENT_PRESENCE_TEXT
     
     current_presence_text = f"ACTIVE|{DEVICE_ID}"
@@ -160,7 +160,7 @@ async def send_presence(context: ContextTypes.DEFAULT_TYPE):
                         disable_web_page_preview=True
                     )
                 except telegram.error.BadRequest as e:
-                    logger.warning(f"Gagal mengedit pesan kehadiran: {e}. Mengirim pesan baru sebagai cadangan.")
+                    logger.warning(f"Не удалось изменить сообщение статуса: {e}. Отправка нового сообщения.")
                     context.application.bot_data['presence_message_id'] = None
                     new_message = await context.bot.send_message(
                         chat_id=chat_id,
@@ -178,10 +178,10 @@ async def send_presence(context: ContextTypes.DEFAULT_TYPE):
                 )
                 context.application.bot_data['presence_message_id'] = new_message.message_id
         except Exception as e:
-            logger.error(f"Gagal mengirim atau mengedit pesan kehadiran ke chat {chat_id}: {e}")
+            logger.error(f"Ошибка отправки/изменения статуса в чате {chat_id}: {e}")
 
 async def clear_inactive_devices(context: ContextTypes.DEFAULT_TYPE):
-    """Menghapus perangkat yang tidak mengirim sinyal kehadiran dalam 10 menit terakhir."""
+    """Удаляет устройства, которые не подавали сигнал активности более 10 минут."""
     global ACTIVE_DEVICES
     now = datetime.datetime.now().timestamp()
     
@@ -193,11 +193,11 @@ async def clear_inactive_devices(context: ContextTypes.DEFAULT_TYPE):
     for device in inactive_devices:
         ACTIVE_DEVICES.discard(device)
     
-    logger.info(f"Perangkat tidak aktif dihapus: {inactive_devices}")
+    logger.info(f"Неактивные устройства удалены: {inactive_devices}")
 
 @check_access
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Menangani perintah /start dan menampilkan menu bot."""
+    """Обрабатывает команду /start и отображает главное меню бота."""
     global ACTIVE_DEVICES
     chat_id = update.effective_chat.id
     
@@ -208,19 +208,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     ACTIVE_DEVICES.clear()
     ACTIVE_DEVICES.add(DEVICE_ID)
 
-    # Beri waktu bot lain untuk mengirim sinyal kehadiran mereka
+    # Даем время другим ботам отправить сигнал присутствия
     await asyncio.sleep(5)
 
     sorted_active_devices = sorted(list(ACTIVE_DEVICES))
     
-    # Hanya perangkat pertama dalam daftar yang merespons perintah /start
+    # Только первое устройство в списке отвечает на команду /start (Master-устройство)
     if sorted_active_devices and sorted_active_devices[0] == DEVICE_ID:
         await send_main_menu(update, context, sorted_active_devices)
     else:
-        logger.info(f"Perangkat '{DEVICE_ID}' mengabaikan /start karena bukan master saat ini.")
+        logger.info(f"Устройство '{DEVICE_ID}' игнорирует /start, так как не является мастером в данный момент.")
 
 async def presence_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Menangani pesan 'ACTIVE' dari perangkat lain."""
+    """Обрабатывает сообщение 'ACTIVE' от других устройств."""
     global ACTIVE_DEVICES
     
     if update.effective_message.text and update.effective_message.text.startswith("ACTIVE|"):
@@ -232,7 +232,7 @@ async def presence_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
         if device_id not in ACTIVE_DEVICES:
             ACTIVE_DEVICES.add(device_id)
-            logger.info(f"Perangkat baru terdeteksi: {device_id}")
+            logger.info(f"Обнаружено новое устройство: {device_id}")
 
         try:
             await update.effective_message.delete()
@@ -240,7 +240,7 @@ async def presence_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             pass
 
 async def reload_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Menangani pesan RELOAD|ALL untuk memaksa pembaruan."""
+    """Обрабатывает сообщение RELOAD|ALL для принудительного обновления всех ботов."""
     
     if update.effective_message.text == "RELOAD|ALL":
         try:
@@ -248,10 +248,10 @@ async def reload_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         except Exception:
             pass
             
-        logger.info(f"Sinyal RELOAD|ALL diterima di perangkat '{DEVICE_ID}'. Memulai pembaruan paksa.")
+        logger.info(f"Сигнал RELOAD|ALL получен устройством '{DEVICE_ID}'. Запуск принудительного обновления.")
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=f"🔄 **{os.environ.get('DEVICE_ID')}** menerima sinyal pembaruan paksa. Memulai ulang bot...",
+            text=f"🔄 **{os.environ.get('DEVICE_ID')}** получил сигнал принудительного обновления. Перезапуск бота...",
             parse_mode='Markdown'
         )
             
@@ -260,7 +260,7 @@ async def reload_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         
 @check_access
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Menangani semua tombol yang ditekan."""
+    """Обрабатывает нажатия на все инлайн-кнопки."""
     query = update.callback_query
     await query.answer()
     
@@ -272,9 +272,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await query.message.delete()
     except telegram.error.BadRequest as e:
         if "message to delete not found" in str(e):
-            logger.warning("Gagal menghapus pesan, pesan sudah terhapus. Melanjutkan.")
+            logger.warning("Не удалось удалить сообщение: оно уже удалено. Продолжаем.")
         else:
-            logger.error(f"Gagal menghapus pesan: {e}")
+            logger.error(f"Ошибка при удалении сообщения: {e}")
             
     if action in ["back_to_main_menu", "back_to_device_menu"]:
         await send_main_menu(update, context, sorted(list(ACTIVE_DEVICES)))
@@ -285,11 +285,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         if selected_device == DEVICE_ID:
             await send_device_menu(update, context, selected_device)
         else:
-            logger.warning(f"Tombol ditekan untuk perangkat lain: {selected_device}. Mengabaikan.")
+            logger.warning(f"Кнопка нажата для другого устройства: {selected_device}. Игнорирую.")
         return
     
     if action == "install_update":
-        await context.bot.send_message(chat_id=query.message.chat_id, text="🔄 Memulai proses instalasi pembaruan. Bot akan memulai ulang setelah selesai.")
+        await context.bot.send_message(chat_id=query.message.chat_id, text="🔄 Запуск процесса установки обновления. Бот перезапустится после завершения.")
         subprocess.Popen(['/bin/sh', os.path.join(SCRIPT_DIR, 'update.sh')])
         return
     
@@ -300,12 +300,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         if selected_device == DEVICE_ID:
             try:
                 await LOADED_MODULES[command_name].execute(update, context, command_data)
-                logger.info(f"Perintah /{command_name} berhasil dijalankan pada '{DEVICE_ID}'.")
+                logger.info(f"Команда /{command_name} успешно выполнена на '{DEVICE_ID}'.")
             except Exception as e:
-                logger.error(f"Gagal menjalankan perintah /{command_name}: {e}")
+                logger.error(f"Ошибка при выполнении команды /{command_name}: {e}")
                 await context.bot.send_message(
                     chat_id=update.effective_chat.id,
-                    text=f"❌ Terjadi kesalahan saat menjalankan perintah {command_name}."
+                    text=f"❌ ❌ Произошла ошибка при выполнении команды {command_name}."
                 )
             return
 
@@ -313,10 +313,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if len(command_parts) >= 3:
         remote_device_id = command_parts[2]
     
-    logger.warning(f"Tombol ditekan oleh '{remote_device_id}' untuk perintah '{action}', tetapi tidak cocok dengan DEVICE_ID lokal '{DEVICE_ID}'. Mengabaikan.")
+    logger.warning(f"Кнопка нажата устройством '{remote_device_id}' для команды '{action}', но она не совпадает с локальным DEVICE_ID '{DEVICE_ID}'. Игнорирую.")
 
 async def send_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, devices_list) -> Message:
-    """Mengirim menu utama pilihan perangkat dan mengembalikan objek pesan."""
+    """Отправляет главное меню выбора устройств."""
     keyboard = [[InlineKeyboardButton(device, callback_data=f"select|{device}")] for device in sorted(devices_list)]
     
 #    update_script_path = os.path.join(SCRIPT_DIR, 'update.sh')
@@ -327,7 +327,7 @@ async def send_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, dev
     
     if update.callback_query:
         message = await update.callback_query.message.reply_text(
-            "Halo! Silakan pilih perangkat yang ingin Anda kelola:",
+            "Привет! Пожалуйста, выберите устройство для управления:",
             reply_markup=reply_markup
         )
     else:
@@ -335,43 +335,43 @@ async def send_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, dev
             "Halo! Silakan pilih perangkat yang ingin Anda kelola:",
             reply_markup=reply_markup
         )
-    logger.info("Menu pemilihan perangkat berhasil dikirim.")
+    logger.info("Меню выбора устройств успешно отправлено.")
     return message
 
 async def send_device_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_device: str) -> None:
-    """Mengirim menu perintah untuk perangkat tertentu secara dinamis."""
+    """Динамически отправляет меню команд для конкретного устройства."""
     commands_list = sorted(list(context.application.bot_data.get('menu_commands', {}).keys()))
     
     keyboard = []
     for cmd in commands_list:
         keyboard.append([InlineKeyboardButton(cmd.capitalize(), callback_data=f"{cmd}|menu|{selected_device}")])
         
-    keyboard.append([InlineKeyboardButton("Kembali ke Menu Utama", callback_data="back_to_main_menu")])
+    keyboard.append([InlineKeyboardButton("Вернуться в главное меню", callback_data="back_to_main_menu")])
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     message = await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f"Anda memilih `{selected_device}`. Silakan pilih perintah:",
+        text=f"Вы выбрали `{selected_device}`. Выберите команду:",
         reply_markup=reply_markup,
         parse_mode='Markdown'
     )
-    logger.info(f"Menu perintah untuk '{selected_device}' berhasil dikirim.")
+    logger.info(f"Меню команд для '{selected_device}' успешно отправлено.")
 
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Log kesalahan yang terjadi dari bot."""
+    """Логирует ошибки, возникающие при работе бота."""
     if context.error and isinstance(context.error, telegram.error.Conflict):
-        logger.warning("Token bot digunakan oleh instance lain. Ini adalah perilaku yang diharapkan saat bot dihidupkan ulang.")
+        logger.warning("Токен бота используется другим экземпляром. Это ожидаемо при перезагрузке.")
     else:
-        logger.error("Terjadi kesalahan:", exc_info=context.error)
+        logger.error("Произошла ошибка:", exc_info=context.error)
 
 def main() -> None:
-    """Fungsi utama untuk menjalankan bot dengan logika coba lagi."""
+    """Основная функция запуска бота с логикой повторных попыток подключения."""
     token = get_token()
     if not token:
-        logger.error("Token tidak ditemukan. Keluar.")
+        logger.error("Токен не найден. Выход.")
         return
 
-    logger.info(f"DEVICE_ID lokal yang terdeteksi: '{DEVICE_ID}'")
+    logger.info(f"Обнаружен локальный DEVICE_ID: '{DEVICE_ID}'")
     load_allowed_users()
     
     application = Application.builder().token(token).build()
@@ -383,11 +383,11 @@ def main() -> None:
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.Regex(r'^RELOAD\|ALL'), reload_handler))
     
     application.add_error_handler(error_handler)
-
+    # Интервалы сигналов присутствия и очистки неактивных устройств
     application.job_queue.run_repeating(send_presence, interval=180, first=5)
     application.job_queue.run_repeating(clear_inactive_devices, interval=600, first=10)
 
-    logger.info("Application started. Bot sedang aktif.")
+    logger.info("Приложение запущено. Бот активен.")
     
     max_retries = 5
     initial_delay = 10
@@ -397,19 +397,19 @@ def main() -> None:
             asyncio.run(application.run_polling(poll_interval=10, timeout=10))
             return
         except telegram.error.NetworkError as e:
-            logger.error(f"Gagal terhubung ke Telegram: {e}")
+            logger.error(f"Ошибка подключения к Telegram: {e}")
             if attempt < max_retries - 1:
-                logger.warning(f"Mencoba lagi dalam {initial_delay} detik. (Percobaan {attempt + 1}/{max_retries})")
+                logger.warning(f"Повторная попытка через {initial_delay} сек. (Попытка {attempt + 1}/{max_retries})")
                 time.sleep(initial_delay)
             else:
-                logger.error("Gagal terhubung setelah beberapa kali percobaan. Bot akan keluar.")
+                logger.error("Не удалось подключиться после нескольких попыток. Выход.")
                 return
         except telegram.error.Conflict:
-            logger.warning("Token sedang digunakan oleh bot lain. Menunggu 5 detik...")
+            logger.warning("Токен используется другим ботом. Ожидание 5 секунд...")
             time.sleep(5)
             os.execv(sys.executable, ['python3'] + sys.argv)
         except Exception as e:
-            logger.error(f"Kesalahan tak terduga: {e}. Bot akan keluar.")
+            logger.error(f"Непредвиденная ошибка: {e}.  Выход.")
             return
 
 if __name__ == '__main__':
