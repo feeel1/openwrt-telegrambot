@@ -2,18 +2,18 @@
 
 case "$1" in
   start)
-    echo "Menghentikan bot lama..."
+    echo "Остановка старого бота..."
     killall python3 2>/dev/null
     sleep 2
-    echo "Menjalankan bot baru..."
+    echo "Запуск нового бота..."
     /usr/bin/python3 /www/assisten/bot/bot.py &
     ;;
   stop)
-    echo "Menghentikan bot..."
+    echo "Остановка бота..."
     killall python3 2>/dev/null
     ;;
   *)
-    echo "Penggunaan: $0 {start|stop}"
+    echo "Использование: $0 {start|stop}"
     exit 1
     ;;
 esac
