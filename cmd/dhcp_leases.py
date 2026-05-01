@@ -10,7 +10,7 @@ VERSION = "3.5.0"
 logger = logging.getLogger(__name__)
 
 async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_data: str) -> None:
-    """Mengambil dan menampilkan daftar DHCP leases dari file /tmp/dhcp.leases."""
+    """Извлекает и отображает список DHCP арен из файла /tmp/dhcp.leases."""
     
     selected_device = 'local'
     command_parts = command_data.split('|')
@@ -19,13 +19,13 @@ async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_da
 
     leases_file = '/tmp/dhcp.leases'
 
-    # Tambahkan tombol kembali
-    keyboard = [[InlineKeyboardButton("Kembali ke menu pilih perintah", callback_data=f"back_to_device_menu|{selected_device}")]]
+    # Добавляем кнопку возврата
+    keyboard = [[InlineKeyboardButton("Назад в меню команд", callback_data=f"back_to_device_menu|{selected_device}")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     if not os.path.exists(leases_file):
         await update.effective_message.reply_text(
-            "❌ File dhcp.leases tidak ditemukan. Mungkin tidak ada perangkat yang terhubung.",
+            "❌ Файл dhcp.leases не найден. Вероятно, подключенных устройств нет.",
             reply_markup=reply_markup
         )
         return
@@ -36,12 +36,12 @@ async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_da
 
         if not lines:
             await update.effective_message.reply_text(
-                "Tidak ada DHCP leases aktif yang ditemukan.",
+                "Активные DHCP аренды не найдены.",
                 reply_markup=reply_markup
             )
             return
 
-        response_text = "✨ **Daftar Perangkat Terhubung (DHCP Leases)** ✨\n\n"
+        response_text = "✨ **Список подключенных устройств (DHCP Leases)** ✨\n\n"
         
         for line in lines:
             parts = line.strip().split()
@@ -62,16 +62,16 @@ async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_da
                         minutes, seconds = divmod(remainder, 60)
                         lease_str = f"{int(days)}h {int(hours)}j {int(minutes)}m {int(seconds)}d"
                     else:
-                        lease_str = "Kedaluwarsa"
+                        lease_str = "Истекло"
 
                     response_text += f"**Hostname:** `{hostname}`\n"
                     response_text += f"**IP Address:** `{ip_address}`\n"
                     response_text += f"**MAC Address:** `{mac_address}`\n"
-                    response_text += f"**Sisa Waktu Lease:** `{lease_str}`\n"
+                    response_text += f"**Остаток времени аренды:** `{lease_str}`\n"
                     response_text += "––––––––––––––––––––\n"
 
                 except (ValueError, IndexError) as e:
-                    logger.warning(f"Melewatkan baris tidak valid di dhcp.leases: {line.strip()}. Error: {e}")
+                    logger.warning(f"Пропуск некорректной строки в dhcp.leases: {line.strip()}. Error: {e}")
                     continue
 
         await update.effective_message.reply_text(
@@ -81,9 +81,9 @@ async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_da
         )
 
     except Exception as e:
-        logger.error(f"Terjadi kesalahan saat membaca file dhcp.leases: {e}")
+        logger.error(f"Ошибка при чтении файла dhcp.leases: {e}")
         await update.effective_message.reply_text(
-            f"❌ Terjadi kesalahan tak terduga: `{e}`", 
+            f"❌ Произошла непредвиденная ошибка: `{e}`", 
             reply_markup=reply_markup,
             parse_mode='Markdown'
         )
