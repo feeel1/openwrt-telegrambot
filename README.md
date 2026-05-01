@@ -90,48 +90,77 @@ opkg install python3-pip &</code></pre>
 </blockquote>
 
 <h4>3. Установите необходимые библиотеки Python</h4>
-<pre><code>opkg install python3-psutil
+<pre><code>
+opkg install python3-psutil
 pip3 install python-telegram-bot
-pip3 install paramiko
-pip3 install "python-telegram-bot[job-queue]"</code></pre>
+opkg install python3-paramiko
+pip3 install "python-telegram-bot[job-queue]"
+</code></pre>
+
+<h5>Проверка</h5>
+<pre><code>
+python3 -c "import psutil, telegram, paramiko, apscheduler, tzlocal; from telegram.ext import JobQueue; print('🚀 Среда HomeLan полностью готова к работе!')"
+</code></pre>
 
 <h2>⚙️ Руководство по установке</h2>
 <p>Следуйте этим шагам для установки бота на ваш роутер OpenWrt.</p>
 
 <h3>Шаг 1: Клонирование репозитория</h3>
 <p>Войдите в роутер через SSH или терминал LuCI и выполните команды для загрузки кода:</p>
-<pre><code>mkdir -p /www/assisten
+<pre><code>
+mkdir /www/assisten 
+mkdir /www/assisten/bot
 cd /www/assisten/
-git clone https://github.com/fahrulariza/openwrt-telegrambot.git bot</code></pre>
+git clone https://github.com/feeel1/openwrt-telegrambot.git bot
+</code></pre>
+    
 <p><b>Или альтернативный вариант:</b> скачайте архив вручную, распакуйте и поместите файлы в <code>/www/assisten/bot/</code></p>
 
 <h3>Шаг 2: Настройка токена бота и доступа пользователей</h3>
 <p>Создайте нового бота через @BotFather и получите API токен. Создайте файл <code>token.txt</code>:</p>
 <pre><code>echo "ВАШ_ТОКЕН_БОТА" > /www/assisten/bot/token.txt</code></pre>
 
-<p>Узнайте ваш Telegram ID через @userinfobot. Создайте файл <code>akses.txt</code>:</p>
+<p>Узнайте ваш Telegram ID через @userinfobot а также вашего ID бота. Создайте файл с двумя ID <code>akses.txt</code>:</p>
 <pre><code>echo "ВАШ_TELEGRAM_ID" > /www/assisten/bot/akses.txt</code></pre>
 
 <h3>Шаг 3: Установка зависимостей и прав доступа</h3>
 <p>Установите необходимые библиотеки и обеспечьте корректное выполнение всех скриптов:</p>
-<pre><code>cd /www/assisten/bot
-pip install -r requirements.txt
 
-chmod +x /www/assisten/bot/*.sh
+<pre><code>
+cd /www/assisten/bot
+pip install -r requirements.txt
+</code></pre>
+
+<p>Этот скрипт обеспечит наличие у всех файлов правильных прав на выполнение.</p>
+<pre><code>
+chmod +x /www/assisten/bot/force_update.sh
+chmod +x /www/assisten/bot/pre_run.sh
+chmod +x /www/assisten/bot/restart.sh
+chmod +x /www/assisten/bot/run_bot.sh
+chmod +x /www/assisten/bot/update.sh
+dos2unix /www/assisten/bot/force_update.sh
+dos2unix /www/assisten/bot/pre_run.sh
+dos2unix /www/assisten/bot/restart.sh
+dos2unix /www/assisten/bot/run_bot.sh
+dos2unix /www/assisten/bot/update.sh
+dos2unix /www/assisten/bot/bot.py
 chmod +x /www/assisten/bot/bot.py
 dos2unix /www/assisten/bot/*.sh
-dos2unix /www/assisten/bot/bot.py
-
+</code></pre>
+    
+<p>Чтобы убедиться, что все файлы в папке cmd/ имеют правильный формат и права доступа, запустите эту команду еще раз.</p>
+<pre><code>
 cd /www/assisten/bot/cmd
 dos2unix *.py
-chmod +x *.py</code></pre>
+chmod +x *.py
+</code></pre>
 
 <h3>Шаг 4: Запуск бота (Ручной режим)</h3>
 <p>Используйте скрипт <code>run_bot.sh</code> для запуска. Бот будет работать в фоновом режиме:</p>
 <pre><code>/www/assisten/bot/run_bot.sh start</code></pre>
 
 <h3>Альтернативный способ (Автозагрузка через Init Script)</h3>
-<p>Рекомендуемый метод для OpenWrt — создание скрипта в <code>init.d</code>. Это позволит боту запускаться автоматически при старте роутера[cite: 1, 2].</p>
+<p>Рекомендуемый метод для OpenWrt — создание скрипта в <code>init.d</code>. Это позволит боту запускаться автоматически при старте роутера.</p>
 
 <p>Создайте файл <code>/etc/init.d/telegram-bot</code>:</p>
 <pre><code>
@@ -150,13 +179,10 @@ start_service() {
     procd_set_param chdir "/www/assisten/bot"              
     procd_set_param command "/usr/bin/python3" "$PROG_PATH"
     procd_set_param user "$PROG_USER"       
-    procd_set_param pidfile "$PROG_PID_FILE"
-                        
+    procd_set_param pidfile "$PROG_PID_FILE"                 
     procd_set_param stdout 1
-    procd_set_param stderr 1
-                           
-    procd_set_param respawn
-                        
+    procd_set_param stderr 1                         
+    procd_set_param respawn                      
     procd_close_instance
 }
                 
