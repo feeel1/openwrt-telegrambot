@@ -17,16 +17,16 @@ logger = logging.getLogger(__name__)
 
 async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_data: str = None) -> None:
     """
-    Menangani perintah /update dan callback dari tombol.
-    Fungsi ini menampilkan versi lokal dan versi GitHub dan
-    menawarkan tombol untuk pembaruan jika versi baru tersedia.
+    Обрабатывает команду /update и callback от кнопок.
+    Функция отображает локальную версию и версию на GitHub,
+    предлагая кнопку обновления, если доступна новая версия.
     """
     
     chat_id = update.effective_chat.id
     SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
     try:
-        # Panggil skrip update.sh untuk mendapatkan status versi
+        # Вызов скрипта update.sh для проверки статуса версий
         process = await asyncio.create_subprocess_exec(
             '/bin/sh', os.path.join(SCRIPT_DIR, 'update.sh'), '--check',
             stdout=subprocess.PIPE,
@@ -36,27 +36,28 @@ async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_da
         
         output = stdout.decode('utf-8').strip()
         
-        # Pisahkan output menjadi baris dan cari versi
+        # Разделение вывода на строки и поиск версий
         lines = output.split('\n')
-        local_version = "Tidak terdeteksi"
-        github_version = "Tidak terdeteksi"
+        local_version = "Не определено"
+        github_version = "Не определено"
         
         for line in lines:
+            # Примечание: метки "Versi lokal" и "Versi GitHub" должны соответствовать выводу вашего update.sh
             if "Versi lokal:" in line:
                 local_version = line.split(':')[1].strip()
             elif "Versi GitHub:" in line:
                 github_version = line.split(':')[1].strip()
         
-        message_text = f"⚙️ **Status Pembaruan**\n"
-        message_text += f"Versi Lokal: `{local_version}`\n"
-        message_text += f"Versi GitHub: `{github_version}`\n"
+        message_text = f"⚙️ **Статус обновления**\n"
+        message_text += f"Локальная версия: `{local_version}`\n"
+        message_text += f"Версия GitHub: `{github_version}`\n"
         
         keyboard = []
-        if local_version != "Tidak terdeteksi" and github_version != "Tidak terdeteksi" and local_version != github_version:
-            message_text += "Pembaruan tersedia! Silakan klik tombol di bawah untuk menginstal."
+        if local_version != "Не определено" and github_version != "Не определено" and local_version != github_version:
+            message_text += "Доступно обновление! Нажмите кнопку ниже для установки."
             keyboard.append([InlineKeyboardButton("Install Update", callback_data="install_update")])
         else:
-            message_text += "Anda sudah menggunakan versi terbaru."
+            message_text += "Вы используете актуальную версию."
             
         reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -66,11 +67,11 @@ async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_da
             reply_markup=reply_markup,
             parse_mode='Markdown'
         )
-        logger.info(f"Status pembaruan berhasil dikirim ke chat ID {chat_id}.")
+        logger.info(f"Статус обновления отправлен в чат {chat_id}.")
         
     except Exception as e:
-        logger.error(f"Gagal menjalankan pemeriksaan pembaruan: {e}")
+        logger.error(f"Ошибка при проверке обновлений: {e}")
         await context.bot.send_message(
             chat_id=chat_id,
-            text="❌ Maaf, terjadi kesalahan saat memeriksa pembaruan."
+            text="❌ Произошла ошибка при проверке обновлений."
         )
