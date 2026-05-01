@@ -1,19 +1,19 @@
 #!/bin/sh
 
-# File ini berfungsi untuk secara paksa memulai proses pembaruan.
-# Skrip ini bisa dipanggil oleh bot atau secara manual.
+# Этот файл предназначен для принудительного запуска процесса обновления.
+# Скрипт может быть вызван ботом или вручную.
 
-# Tentukan lokasi skrip
+# Определяем расположение скрипта
 SCRIPT_DIR="/www/assisten/bot"
 
-# Cek apakah skrip update.sh ada
+## Проверяем наличие файла update.sh
 if [ ! -f "$SCRIPT_DIR/update.sh" ]; then
-    echo "Kesalahan: Skrip update.sh tidak ditemukan!"
+    echo "Ошибка: Скрипт update.sh не найден!"
     exit 1
 fi
 
-# Jalankan skrip update.sh dengan argumen paksa
-# Argumen --force akan memaksa pembaruan tanpa memeriksa versi
+# Запускаем скрипт update.sh с аргументом принудительного выполнения.
+# Аргумент --force заставит выполнить обновление без проверки версии.
 /bin/sh "$SCRIPT_DIR/update.sh" --force
 
 exit 0
