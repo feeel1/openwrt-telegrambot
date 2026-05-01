@@ -6,27 +6,28 @@
 ![Total Commits](https://img.shields.io/github/commit-activity/t/fahrulariza/openwrt-telegrambot)
 ![Top Language](https://img.shields.io/github/languages/top/fahrulariza/openwrt-telegrambot)
 [![Open Issues](https://img.shields.io/github/issues/fahrulariza/openwrt-telegrambot)](https://github.com/fahrulariza/openwrt-telegrambot/issues)
-
-<h1>Asisten Bot Telegram sederhana untuk OpenWrt</h1>
-<p>Kelola router OpenWrt Anda dengan mudah melalui bot Telegram!</p>
+</div>
+<h1>Простой ассистент Telegram-бот для OpenWrt</h1>
+<div align="center">
+    <p>Управляйте вашим роутером OpenWrt с легкостью через Telegram-бота!</p>
 </div>
 
-Click here for English instructions [here](https://github.com/fahrulariza/openwrt-telegrambot/blob/master/README-EN.md)
+Нажмите здесь для получения инструкции на английском [здесь](https://github.com/fahrulariza/openwrt-telegrambot/blob/master/README-EN.md)
 
-## 🚀 Fitur Utama
-- **Kontrol Penuh**: Jalankan perintah shell, pantau status sistem, dan kelola layanan langsung dari Telegram.
-- **Antarmuka Interaktif**: Menggunakan Inline Keyboard untuk navigasi yang mudah tanpa mengetik perintah manual.
-- **Notifikasi Instan**: Terima notifikasi real-time tentang status router Anda.
-- **Keamanan Terjamin**: Akses hanya diberikan kepada User ID yang telah disetujui.
-- **Module**: menambahkan dan menghapus module tanpa mengubah script utama hanya di folder `cmd`
+<h2>🚀 Основные возможности</h2>
+<ul>
+    <li><b>Полный контроль</b>: Запускайте команды shell, отслеживайте статус системы и управляйте сервисами напрямую из Telegram.</li>
+    <li><b>Интерактивный интерфейс</b>: Использование Inline Keyboard для удобной навигации без необходимости вводить команды вручную.</li>
+    <li><b>Мгновенные уведомления</b>: Получайте уведомления о статусе вашего роутера в режиме реального времени.</li>
+    <li><b>Гарантированная безопасность</b>: Аксесс предоставляется только пользователям с одобренными User ID.</li>
+    <li><b>Модульность</b>: Добавляйте и удаляйте модули без изменения основного скрипта, работая только в папке <code>cmd</code>.</li>
+</ul>
 
-
-
-### ⚙️ Struktur file Instalasi
-```
+<h3>⚙️ Структура файлов установки</h3>
+<pre><code>
 /www/assisten/
         ├── bot/
-        │   ├── cmd/       <<<<<<<<<<< folder utama berisi module perintah
+        │   ├── cmd/           <<<<<<<<<<< основная папка с модулями команд
         │   │   ├── __init__.py
         │   │   ├── akses.py
         │   │   ├── dhcp_leases.py
@@ -36,171 +37,140 @@ Click here for English instructions [here](https://github.com/fahrulariza/openwr
         │   │   ├── reload_bot.py
         │   │   ├── status.py
         │   │   └── update.py
-        │   ├── bot.py <<<<<<<<<<<<<<< script utama untuk menerima dan menjalankan perintah. 
+        │   ├── bot.py         <<<<<<<<<<< основной скрипт для приема и выполнения команд.
         │   ├── README.md
         │   ├── restart.sh
-        │   ├── run_bot.sh  <<<<<<<<<< script eksekusi untuk menjalankan bot.py
-        │   ├── akses.txt <<<<<<<<<<<< berisi ID yang akan bisa mengakses perintah bot
-        │   └── token.txt <<<<<<<<<<<< berisi token bot yang akan digunakan
+        │   ├── run_bot.sh     <<<<<<<<<<< скрипт исполнения для запуска bot.py
+        │   ├── akses.txt      <<<<<<<<<<< содержит ID, которые смогут обращаться к боту
+        │   └── token.txt      <<<<<<<<<<< содержит токен бота
         └── .git/
-```
-## 🛠️ Penjelasan Struktur File
-> - **/www/assisten/bot**: Ini adalah direktori utama tempat semua kode bot berada.
-> - folder **bot/**:
-> 1. **cmd/**: Folder ini berisi semua modul perintah yang dapat dijalankan bot. Setiap file .py di sini (akses.py, status.py, dll.) adalah perintah terpisah yang akan dimuat secara dinamis oleh bot.py. File __init__.py kosong diperlukan agar Python mengenali cmd sebagai sebuah paket.
-> 2. **bot.py**: Skrip utama bot yang menjalankan semua logika, menangani koneksi Telegram, memuat perintah, dan mengelola interaksi.
-> 3. **README.md**: Berisi panduan instalasi dan deskripsi proyek.
-> 4. **restart.sh**: Skrip shell untuk menghentikan dan memulai ulang bot.
-> 5. **run_bot.sh**: Skrip utama untuk mengelola siklus hidup bot (mulai, berhenti, restart).
-> 6. **akses.txt**: File teks berisi daftar User ID Telegram yang diizinkan untuk menggunakan bot.
-> 7. **token.txt**: File teks berisi token API bot Anda dari BotFather.
-> 8. **.git/**: Direktori ini dibuat oleh Git untuk mengelola riwayat versi proyek.
+</code></pre>
 
-Struktur ini rapi, modular, dan memudahkan Anda untuk menambah, menghapus, atau mengelola perintah baru tanpa mengubah skrip utama `bot.py` hanya uploda module ke folder `cmd`.
+<h2>🛠️ Пояснение структуры файлов</h2>
+<blockquote>
+    <ul>
+        <li><b>/www/assisten/bot</b>: Это основная директория, где находятся все файлы бота.</li>
+        <li><b>Папка bot/</b>:
+            <ol>
+                <li><b>cmd/</b>: Эта папка содержит все модули команд, которые может выполнять бот. Каждый файл .py здесь (akses.py, status.py и т.д.) — это отдельная команда, которая динамически загружается скриптом bot.py. Пустой файл __init__.py необходим для того, чтобы Python распознавал cmd как пакет.</li>
+                <li><b>bot.py</b>: Главный скрипт бота, который выполняет всю логику, обрабатывает соединения Telegram, загружает команды и управляет взаимодействием.</li>
+                <li><b>README.md</b>: Содержит руководство по установке и описание проекта.</li>
+                <li><b>restart.sh</b>: Скрипт shell для остановки и перезапуска бота.</li>
+                <li><b>run_bot.sh</b>: Основной скрипт для управления жизненным циклом бота (старт, стоп, рестарт).</li>
+                <li><b>akses.txt</b>: Текстовый файл со списком User ID Telegram, которым разрешено использовать бота.</li>
+                <li><b>token.txt</b>: Текстовый файл, содержащий API токен вашего бота от BotFather.</li>
+                <li><b>.git/</b>: Директория, созданная Git для управления историей версий проекта.</li>
+            </ol>
+        </li>
+    </ul>
+</blockquote>
 
-## 🛠️ Persiapan
-Tool yang Dibutuhkan
-Sebelum memulai, pastikan telah menginstal tool berikut di OpenWrt :
+<p>Эта структура аккуратна, модульна и позволяет легко добавлять, удалять или управлять новыми командами без изменения основного скрипта <code>bot.py</code> — достаточно просто загрузить модуль в папку <code>cmd</code>.</p>
 
-melalui terminal di openwrt ikuti langkah dibawah ini
+<h2>🛠️ Подготовка</h2>
+<h3>Необходимые инструменты</h3>
+<p>Перед началом убедитесь, что в OpenWrt установлены следующие инструменты. Выполните шаги через терминал:</p>
 
-#### Perbarui daftar paket
-```
-opkg update
-```
-#### Pasang paket yang diperlukan
-```
-opkg install python3 python3-pip dos2unix wget git-http
-```
+<h4>1. Обновите список пакетов</h4>
+<pre><code>opkg update</code></pre>
 
-> Keterangan Tool
-> 1. **python3:** Bahasa pemrograman utama untuk menjalankan bot.
-> 2. **python3-pip:** Manajer paket untuk menginstal pustaka Python yang dibutuhkan.
-> 3. **dos2unix:** Untuk mengonversi format file skrip.
-> 4. **wget:** Untuk mengunduh file dari internet.
-> 5. **git-http:** Digunakan untuk proses instalasi yang lebih mudah.
+<h4>2. Установите необходимые пакеты</h4>
+<pre><code>opkg install python3 dos2unix wget git-http
+opkg install python3-pip &</code></pre>
 
-#### Pasang library python yang diperlukan
-```
-pip install psutil
-```
-```
+<blockquote>
+    <b>Описание инструментов:</b>
+    <ol>
+        <li><b>python3</b>: Основной язык программирования для работы бота.</li>
+        <li><b>python3-pip</b>: Менеджер пакетов для установки библиотек Python.</li>
+        <li><b>dos2unix</b>: Для конвертации формата файлов скриптов (исправление переносов строк).</li>
+        <li><b>wget</b>: Для загрузки файлов из интернета.</li>
+        <li><b>git-http</b>: Используется для упрощения процесса установки через клонирование репозитория.</li>
+    </ol>
+</blockquote>
+
+<h4>3. Установите необходимые библиотеки Python</h4>
+<pre><code>opkg install python3-psutil
 pip3 install python-telegram-bot
-```
-```
 pip3 install paramiko
-```
-```
-pip install "python-telegram-bot[job-queue]"
-```
+pip3 install "python-telegram-bot[job-queue]"</code></pre>
 
-## ⚙️ Panduan Instalasi
-Ikuti langkah-langkah di bawah ini untuk menginstal bot di router OpenWrt.
-### Langkah 1: Kloning Repositori
-Masuk ke router OpenWrt melalui `SSH` atau `Terminal LuCi`, lalu jalankan perintah ini untuk mengunduh kode bot dan menyimpannya ke folder assisten di `/www/assisten/bot`:
+<h2>⚙️ Руководство по установке</h2>
+<p>Следуйте этим шагам для установки бота на ваш роутер OpenWrt.</p>
 
-```
-mkdir /www/assisten
-mkdir /www/assisten/bot
+<h3>Шаг 1: Клонирование репозитория</h3>
+<p>Войдите в роутер через SSH или терминал LuCI и выполните команды для загрузки кода:</p>
+<pre><code>mkdir -p /www/assisten
 cd /www/assisten/
-git clone https://github.com/fahrulariza/openwrt-telegrambot.git bot
-```
-atau
-1. Download manual [disini](https://github.com/fahrulariza/openwrt-telegrambot/archive/refs/heads/master.zip)
-2. Letakkan semua file ke dalam folder `/www/asissten/bot/` sturktur bisa dilihat diatas. lanjut ke Lankah 2
+git clone https://github.com/fahrulariza/openwrt-telegrambot.git bot</code></pre>
+<p><b>Или альтернативный вариант:</b> скачайте архив вручную, распакуйте и поместите файлы в <code>/www/assisten/bot/</code></p>
 
-### Langkah 2: Konfigurasi Token Bot & Akses Pengguna
-Buat bot Telegram baru melalui @BotFather dan dapatkan token API-nya.
+<h3>Шаг 2: Настройка токена бота и доступа пользователей</h3>
+<p>Создайте нового бота через @BotFather и получите API токен. Создайте файл <code>token.txt</code>:</p>
+<pre><code>echo "ВАШ_ТОКЕН_БОТА" > /www/assisten/bot/token.txt</code></pre>
 
-Buat file token.txt di folder assisten/bot/ dan masukkan token Anda di dalamnya.
+<p>Узнайте ваш Telegram ID через @userinfobot. Создайте файл <code>akses.txt</code>:</p>
+<pre><code>echo "ВАШ_TELEGRAM_ID" > /www/assisten/bot/akses.txt</code></pre>
 
-```
-echo "TOKEN_BOT_ANDA" > /www/assisten/bot/token.txt
-```
-Dapatkan ID pengguna Telegram Anda dari @userinfobot.
-
-Buat file akses.txt di folder yang sama dan masukkan ID pengguna Anda.
-
-```
-echo "ID_PENGGUNA_ANDA" > /www/assisten/bot/akses.txt
-```
-### Langkah 3: Instal Pustaka Python
-Masuk ke direktori bot dan instal semua pustaka yang diperlukan.
-
-```
-cd /www/assisten/bot
+<h3>Шаг 3: Установка зависимостей и прав доступа</h3>
+<p>Установите необходимые библиотеки и обеспечьте корректное выполнение всех скриптов:</p>
+<pre><code>cd /www/assisten/bot
 pip install -r requirements.txt
-```
-### Langkah 4: Jalankan Skrip Persiapan
-Skrip ini akan memastikan semua file memiliki izin eksekusi yang benar.
-```
-chmod +x /www/assisten/bot/force_update.sh
-chmod +x /www/assisten/bot/pre_run.sh
-chmod +x /www/assisten/bot/restart.sh
-chmod +x /www/assisten/bot/run_bot.sh
-chmod +x /www/assisten/bot/update.sh
-dos2unix /www/assisten/bot/force_update.sh
-dos2unix /www/assisten/bot/pre_run.sh
-dos2unix /www/assisten/bot/restart.sh
-dos2unix /www/assisten/bot/run_bot.sh
-dos2unix /www/assisten/bot/update.sh
-dos2unix /www/assisten/bot/bot.py
+
+chmod +x /www/assisten/bot/*.sh
 chmod +x /www/assisten/bot/bot.py
 dos2unix /www/assisten/bot/*.sh
-```
-Untuk memastikan semua file di folder cmd/ memiliki format dan izin yang benar, jalankan lagi perintah ini
-```
+dos2unix /www/assisten/bot/bot.py
+
 cd /www/assisten/bot/cmd
 dos2unix *.py
-chmod +x *.py
-```
-### Langkah 5: Jalankan Bot Manual
-Gunakan skrip run_bot.sh untuk memulai bot. Bot akan berjalan di latar belakang.
-```
-/www/assisten/bot/run_bot.sh start
-```
+chmod +x *.py</code></pre>
 
-Cara Alternatif (Init Script)
-Metode yang lebih rapi dan direkomendasikan di OpenWrt adalah membuat `init.d` script khusus untuk bot Anda. Ini memberikan kontrol yang lebih baik (misalnya, `enable`, `disable`, `restart`).
+<h3>Шаг 4: Запуск бота (Ручной режим)</h3>
+<p>Используйте скрипт <code>run_bot.sh</code> для запуска. Бот будет работать в фоновом режиме:</p>
+<pre><code>/www/assisten/bot/run_bot.sh start</code></pre>
 
-Metode ini lebih disarankan karena lebih terintegrasi dengan sistem startup OpenWrt.
-Berikut adalah contoh skrip init.d untuk bot Anda:
-File: `/etc/init.d/telegram-bot`
-```
+<h3>Альтернативный способ (Автозагрузка через Init Script)</h3>
+<p>Рекомендуемый метод для OpenWrt — создание скрипта в <code>init.d</code>. Это позволит боту запускаться автоматически при старте роутера[cite: 1, 2].</p>
+
+<p>Создайте файл <code>/etc/init.d/telegram-bot</code>:</p>
+<pre><code>
 #!/bin/sh /etc/rc.common
-
+        
 START=99
 STOP=99
-
-USE_PROCD=1
+           
+USE_PROCD=1                         
 PROG_PATH="/www/assisten/bot/bot.py"
-PROG_USER="root"
-PROG_ARGS=""
+PROG_USER="root"                         
 PROG_PID_FILE="/var/run/bot_telegram.pid"
-
-start_service() {
-    procd_open_instance
-    procd_set_param command "python3" "$PROG_PATH" $PROG_ARGS
-    procd_set_param user "$PROG_USER"
+                 
+start_service() {      
+    procd_open_instance                      
+    procd_set_param chdir "/www/assisten/bot"              
+    procd_set_param command "/usr/bin/python3" "$PROG_PATH"
+    procd_set_param user "$PROG_USER"       
     procd_set_param pidfile "$PROG_PID_FILE"
+                        
     procd_set_param stdout 1
     procd_set_param stderr 1
+                           
+    procd_set_param respawn
+                        
     procd_close_instance
 }
-
-stop_service() {
+                
+stop_service() {                                           
     [ -f "$PROG_PID_FILE" ] && kill $(cat "$PROG_PID_FILE")
     return 0
-}
-```
-Setelah membuat file ini, kamu bisa mengaktifkan autostart di `terminal` dengan perintah:
-```
-dos2unix /etc/init.d/telegram-bot
+</code></pre>
+
+<p>Активируйте автозапуск командами:</p>
+<pre><code>dos2unix /etc/init.d/telegram-bot
 chmod +x /etc/init.d/telegram-bot
 /etc/init.d/telegram-bot enable
-/etc/init.d/telegram-bot stop
-/etc/init.d/telegram-bot start
-```
+/etc/init.d/telegram-bot start</code></pre>
+
 <div align="center">
-<p>Selesai! Sekarang bot Anda siap digunakan. Buka Telegram dan kirim perintah <code>/start</code> ke bot Anda.</p>
+    <p>Готово! Теперь ваш бот готов к использованию. Откройте Telegram и отправьте команду <code>/start</code> своему боту.</p>
 </div>
