@@ -1,28 +1,28 @@
 #!/bin/sh
 
-# File ini berfungsi untuk mengelola pembaruan bot,
-# baik secara normal maupun paksa.
+# Этот файл предназначен для управления обновлениями бота,
+# как в обычном, так и в принудительном режиме.
 
-# Tentukan lokasi dan URL repositori
+# Определение расположения и URL репозитория
 SCRIPT_DIR="/www/assisten/bot"
-GITHUB_REPO="fahrulariza/openwrt-telegrambot"
+GITHUB_REPO="feeel1/openwrt-telegrambot/"
 REPO_URL="https://raw.githubusercontent.com/$GITHUB_REPO/master"
 VERSION_FILE="$SCRIPT_DIR/VERSION"
 TEMP_DIR="/tmp/bot_update"
 
-# --- Tangani Argumen ---
+# --- Обработка аргументов ---
 FORCE_UPDATE=0
 CHECK_ONLY=0
 
 if [ "$1" = "--force" ]; then
     FORCE_UPDATE=1
-    echo "Pembaruan paksa diaktifkan."
+    echo "Принудительное обновление активировано."
 elif [ "$1" = "--check" ]; then
     CHECK_ONLY=1
 fi
 
-# --- Cek Versi ---
-echo "Memeriksa versi..."
+# --- Проверка верси ---
+echo "Проверка версии..."
 if [ -f "$VERSION_FILE" ]; then
     LOCAL_VERSION=$(cat "$VERSION_FILE")
 else
@@ -32,7 +32,7 @@ echo "Versi lokal: $LOCAL_VERSION"
 
 GITHUB_VERSION=$(wget -qO - "$REPO_URL/VERSION")
 if [ -z "$GITHUB_VERSION" ]; then
-    echo "Gagal mendapatkan versi dari GitHub."
+    echo "Не удалось получить версию с GitHub."
     if [ $CHECK_ONLY -eq 1 ]; then
         exit 1
     fi
@@ -41,38 +41,38 @@ if [ -z "$GITHUB_VERSION" ]; then
 fi
 echo "Versi GitHub: $GITHUB_VERSION"
 
-# Jika hanya mode cek, keluar setelah menampilkan versi
+# Если включен режим только проверки, выход после отображения версий
 if [ $CHECK_ONLY -eq 1 ]; then
     exit 0
 fi
 
-# --- Bandingkan Versi (Jika Bukan Pembaruan Paksa) ---
+# --- Сравнение версий (если не принудительное обновление) ---
 if [ $FORCE_UPDATE -eq 0 ] && [ "$LOCAL_VERSION" = "$GITHUB_VERSION" ]; then
-    echo "Bot sudah diperbarui ke versi terbaru. Tidak ada yang perlu diunduh."
+    echo "Установлена актуальная версия бота. Загрузка не требуется."
     /www/assisten/bot/run_bot.sh start
     exit 0
 fi
 
-# --- Proses Pembaruan ---
-echo "Mulai mengunduh file..."
+# --- Процесс обновления ---
+echo "Начало загрузки файлов..."
 
-# Hentikan bot sebelum memulai unduhan
+# Остановка бота перед началом загрузки
 /www/assisten/bot/run_bot.sh stop
 sleep 2
 
-# Hapus dan buat direktori sementara
+# Удаление и создание временной директории
 rm -rf "$TEMP_DIR"
 mkdir -p "$TEMP_DIR/cmd"
 
-# Daftar file yang akan diunduh
+# Список файлов для загрузки
 FILES="bot.py VERSION run_bot.sh update.sh pre_run.sh restart.sh force_update.sh"
 CMD_FILES="akses.py dhcp_leases.py force_update.py help.py interface.py openclash.py reboot.py reload_bot.py status.py update.py terminal.py cekmodule.py wan.py"
 
-# Unduh file utama
+# Загрузка основных файлов
 for file in $FILES; do
   wget -qO "$TEMP_DIR/$file" "$REPO_URL/$file"
   if [ $? -ne 0 ]; then
-    echo "Gagal mengunduh $file. Menghentikan pembaruan."
+    echo "Ошибка загрузки $file. Обновление прервано."
     rm -rf "$TEMP_DIR"
     /www/assisten/bot/run_bot.sh start
     exit 1
@@ -83,16 +83,16 @@ done
 for file in $CMD_FILES; do
   wget -qO "$TEMP_DIR/cmd/$file" "$REPO_URL/cmd/$file"
   if [ $? -ne 0 ]; then
-    echo "Gagal mengunduh cmd/$file. Menghentikan pembaruan."
+    echo "Ошибка загрузки cmd/$file. Обновление прервано."
     rm -rf "$TEMP_DIR"
     /www/assisten/bot/run_bot.sh start
     exit 1
   fi
 done
 
-echo "Unduhan berhasil. Memasang file baru..."
+echo "Загрузка завершена. Установка новых файлов..."
 
-# Salin file ke direktori bot
+#Копирование файлов в директорию бота
 cp -f "$TEMP_DIR/bot.py" "$SCRIPT_DIR/bot.py"
 cp -f "$TEMP_DIR/VERSION" "$SCRIPT_DIR/VERSION"
 cp -f "$TEMP_DIR/run_bot.sh" "$SCRIPT_DIR/run_bot.sh"
@@ -104,8 +104,8 @@ cp -f "$TEMP_DIR/cmd/"* "$SCRIPT_DIR/cmd/"
 
 rm -rf "$TEMP_DIR"
 
-echo "Memperbaiki izin dan format file..."
-# Konversi ke format Unix dan berikan izin eksekusi
+echo "Исправление прав доступа и формата файлов..."
+# Конвертация в формат Unix и предоставление прав на выполнение
 SCRIPTS="bot.py pre_run.sh restart.sh run_bot.sh update.sh force_update.sh"
 for script in $SCRIPTS; do
   if [ -f "$SCRIPT_DIR/$script" ]; then
@@ -114,9 +114,9 @@ for script in $SCRIPTS; do
   fi
 done
 
-echo "Pembaruan selesai. Memulai bot..."
+echo "Обновление завершено. Запуск бота..."
 
-# Jalankan ulang bot
+# Перезапуск бота
 /www/assisten/bot/run_bot.sh start
 
 exit 0
