@@ -11,37 +11,37 @@ IS_MENU_COMMAND = False
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
-# --- Konten Bantuan ---
-# Isi dari file perintah-module.md sudah diubah ke format HTML
+# --- Контент справки ---
+# Содержимое файла справки в формате HTML
 HELP_TEXT = """
-<b>Asisten Bot Telegram sederhana untuk OpenWrt</b>
+<b>Простой Telegram-бот помощник для OpenWrt</b>
 
-Kelola router OpenWrt Anda dengan mudah melalui bot Telegram!
+Управляйте вашим роутером OpenWrt легко через Telegram-бота!
 
-<b>Penjelasan setiap fungsi module</b>
+<b>Описание функций каждого модуля</b>
 
 <b>terminal.py</b>
-modul untuk mengeksekusi perintah terminal dan menampilkan hasilnya di chat telegram bot
-<code>/terminal</code> di Telegram, seperti:
+Модуль для выполнения терминальных команд и вывода результата в чат бота.
+Пример <code>/terminal</code> в Telegram:
 <pre>
 /terminal ps | grep bot
 </pre>
-maka hasil yang dikirim berupa
+Результат будет выглядеть так:
 <pre>
 31006 root      52676 S    /usr/bin/python3 /www/assisten/bot/bot.py
-31155 root        1320 S    /bin/sh -c ps | grep bot
-31158 root        1316 S    grep bot
+31155 root       1320 S    /bin/sh -c ps | grep bot
+31158 root       1316 S    grep bot
 </pre>
 
 <b>cekmodule.py</b>
-modul untuk mengeksekusi perintah terminal dan menampilkan hasilnya di chat telegram bot
-<code>/cekmodule</code> di Telegram, seperti:
+Модуль для отображения списка всех загруженных модулей и их версий.
+Пример <code>/cekmodule</code> в Telegram:
 <pre>
 /cekmodule
 </pre>
-maka hasil yang dikirim berupa
+Результат будет выглядеть так:
 <pre>
-📜 Daftar Modul yang Dimuat:
+📜 Список загруженных модулей:
 
 • Akses (v3.5.0) - <code>MENU</code>
 • Cekmodule (v1.5.1) - <code>MENU</code>
@@ -60,15 +60,15 @@ maka hasil yang dikirim berupa
 </pre>
 
 <b>force_update.py</b>
-modul untuk mengeksekusi perintah terminal memaksa update apapun versinya. berguna untuk memperbaiki script yang rusak atau error dengan memasang script yang terbaru
+Модуль для принудительного обновления до последней версии, независимо от текущей. Полезно для исправления поврежденных скриптов или ошибок путем установки актуальной версии.
 
-<code>/force_update</code> di Telegram, seperti:
+Пример <code>/force_update</code> в Telegram:
 <pre>
 /force_update
 </pre>
-maka hasil yang dikirim berupa
+Результат:
 <pre>
-🚨 Memaksa pembaruan perangkat saat ini...
+🚨 Принудительное обновление устройства...
 </pre>
 """
 
@@ -85,8 +85,8 @@ async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 parse_mode='HTML'
             )
     except Exception as e:
-        logger.error(f"Gagal mengirim pesan bantuan: {e}")
-        error_message = f"❌ Terjadi kesalahan saat menampilkan bantuan."
+        logger.error(f"Ошибка при отправке справки: {e}")
+        error_message = f"❌ Произошла ошибка при отображении справки."
         if update.callback_query:
             await update.callback_query.message.reply_text(error_message)
         else:
