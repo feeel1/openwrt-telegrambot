@@ -10,19 +10,19 @@ VERSION = "3.5.0"
 DEVICE_ID = os.environ.get('DEVICE_ID', 'rumah-menteng.net')
 
 async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_data: str = None) -> None:
-    """Menangani perintah interface untuk menampilkan daftar atau detail."""
+    """Обрабатывает команды интерфейса для отображения списка или деталей."""
     
-    # --- Kode baru untuk menghapus pesan sebelumnya ---
+    # --- Код для удаления предыдущего сообщения ---
     try:
         await update.effective_message.delete()
     except Exception as e:
-        logging.warning(f"Gagal menghapus pesan menu: {e}")
-    # --- Akhir kode baru ---
+        logging.warning(f"Не удалось удалить сообщение меню: {e}")
+    # --- Конец кода ---
     
     message_obj = update.effective_message
     chat_id = message_obj.chat_id
 
-    # Menguraikan `callback_data` dari tombol yang diklik
+    # Разбор `callback_data` нажатой кнопки
     action = 'menu'
     interface_name = None
     if command_data:
@@ -39,7 +39,7 @@ async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_da
         await send_interface_menu(update, context, chat_id)
 
 async def send_interface_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, chat_id: int) -> None:
-    """Mengirim menu dengan daftar interface."""
+    """Отправляет меню со списком интерфейсов."""
     try:
         interfaces = os.listdir('/sys/class/net/')
         interfaces.sort()
@@ -47,32 +47,32 @@ async def send_interface_menu(update: Update, context: ContextTypes.DEFAULT_TYPE
         for interface in interfaces:
             keyboard.append([InlineKeyboardButton(interface, callback_data=f"interface|detail|{DEVICE_ID}|{interface}")])
 
-        keyboard.append([InlineKeyboardButton("Kembali", callback_data=f"back_to_device_menu|{DEVICE_ID}")])
+        keyboard.append([InlineKeyboardButton("Назад", callback_data=f"back_to_device_menu|{DEVICE_ID}")])
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         await context.bot.send_message(
             chat_id=chat_id,
-            text=f"Silakan pilih interface untuk melihat detailnya:",
+            text=f"Выберите интерфейс для просмотра деталей:",
             reply_markup=reply_markup,
             parse_mode='Markdown'
         )
     except Exception as e:
-        logging.error(f"Gagal memuat daftar interface: {e}")
+        logging.error(f"Ошибка при загрузке списка интерфейсов: {e}")
         await context.bot.send_message(
             chat_id=chat_id,
-            text="❌ Gagal memuat daftar interface. Silakan coba lagi nanti."
+            text="❌ Не удалось загрузить список интерфейсов. Попробуйте позже."
         )
 
 async def get_interface_details_ifconfig(update: Update, context: ContextTypes.DEFAULT_TYPE, interface_name: str) -> None:
-    """Mengambil dan menampilkan informasi detail menggunakan ifconfig."""
+    """Извлекает и отображает детальную информацию с помощью ifconfig."""
     try:
-        logging.info(f"Mengambil detail untuk interface: {interface_name}")
+        logging.info(f"Запрос деталей для интерфейса: {interface_name}")
         
         command = f"ifconfig {interface_name}"
         output = subprocess.run(command, shell=True, capture_output=True, text=True, check=True).stdout
 
         if not output.strip():
-            status_message = f"ℹ️ Tidak ada detail yang tersedia untuk interface `{interface_name}`."
+            status_message = f"ℹ️ Детали для интерфейса `{interface_name}` отсутствуют."
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=status_message,
@@ -118,7 +118,7 @@ async def get_interface_details_ifconfig(update: Update, context: ContextTypes.D
             if dns_lines:
                 dns_servers = ', '.join([line.split()[1] for line in dns_lines])
             else:
-                dns_servers = "Tidak ada server DNS yang terdeteksi."
+                dns_servers = "DNS-серверы не обнаружены."
         except Exception:
             pass
 
@@ -132,8 +132,8 @@ async def get_interface_details_ifconfig(update: Update, context: ContextTypes.D
         )
         
         keyboard = [
-            [InlineKeyboardButton("Kembali", callback_data=f"interface|menu|{DEVICE_ID}")],
-            [InlineKeyboardButton("Kembali ke Menu Utama", callback_data=f"back_to_main_menu|{DEVICE_ID}")]
+            [InlineKeyboardButton("Назад", callback_data=f"interface|menu|{DEVICE_ID}")],
+            [InlineKeyboardButton("В главное меню", callback_data=f"back_to_main_menu|{DEVICE_ID}")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -144,14 +144,14 @@ async def get_interface_details_ifconfig(update: Update, context: ContextTypes.D
             parse_mode='Markdown'
         )
     except subprocess.CalledProcessError as e:
-        error_message = f"❌ Gagal mengambil detail interface `{interface_name}`.\nKesalahan: `{e.stderr.strip()}`"
+        error_message = f"❌ Ошибка при получении деталей интерфейса `{interface_name}`.\nKesalahan: `{e.stderr.strip()}`"
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=error_message,
             parse_mode='Markdown'
         )
     except Exception as e:
-        error_message = f"❌ Terjadi kesalahan tak terduga: `{e}`"
+        error_message = f"❌ Произошла непредвиденная ошибка: `{e}`"
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=error_message,
