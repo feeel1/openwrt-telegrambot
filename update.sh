@@ -1,8 +1,5 @@
 #!/bin/sh
 
-# Этот файл предназначен для управления обновлениями бота,
-# как в обычном, так и в принудительном режиме.
-
 # Определение расположения и URL репозитория
 SCRIPT_DIR="/www/assisten/bot"
 GITHUB_REPO="feeel1/openwrt-telegrambot/"
@@ -65,8 +62,8 @@ rm -rf "$TEMP_DIR"
 mkdir -p "$TEMP_DIR/cmd"
 mkdir -p "$TEMP_DIR/scripts"
 
-# 1. Список файлов в КОРНЕ репозитория
-FILES="bot.py VERSION run_bot.sh update.sh pre_run.sh restart.sh force_update.sh sms_manager.sh"
+# 1. Список файлов в КОРНЕ репозитория (БЕЗ sms_manager.sh)
+FILES="bot.py VERSION run_bot.sh update.sh pre_run.sh restart.sh force_update.sh"
 # 2. Список файлов в папке CMD
 CMD_FILES="sms_qmi.py akses.py dhcp_leases.py force_update.py help.py interface.py openclash.py reboot.py reload_bot.py status.py update.py terminal.py cekmodule.py wan.py"
 # 3. Список файлов в папке SCRIPTS
@@ -83,7 +80,7 @@ for file in $FILES; do
   fi
 done
 
-# Unduh file perintah
+# Загрузка файлов команд
 for file in $CMD_FILES; do
   wget -qO "$TEMP_DIR/cmd/$file" "$REPO_URL/cmd/$file"
   if [ $? -ne 0 ]; then
@@ -94,9 +91,20 @@ for file in $CMD_FILES; do
   fi
 done
 
+# Загрузка файлов скриптов (ИСПРАВЛЕНО: загрузка из папки scripts)
+for file in $SCRIPT_FILES; do
+  wget -qO "$TEMP_DIR/scripts/$file" "$REPO_URL/scripts/$file"
+  if [ $? -ne 0 ]; then
+    echo "Ошибка загрузки scripts/$file. Обновление прервано."
+    rm -rf "$TEMP_DIR"
+    /www/assisten/bot/run_bot.sh start
+    exit 1
+  fi
+done
+
 echo "Загрузка завершена. Установка новых файлов..."
 
-#Копирование файлов в директорию бота
+# Копирование файлов в директорию бота
 cp -f "$TEMP_DIR/bot.py" "$SCRIPT_DIR/bot.py"
 cp -f "$TEMP_DIR/VERSION" "$SCRIPT_DIR/VERSION"
 cp -f "$TEMP_DIR/run_bot.sh" "$SCRIPT_DIR/run_bot.sh"
@@ -105,12 +113,13 @@ cp -f "$TEMP_DIR/pre_run.sh" "$SCRIPT_DIR/pre_run.sh"
 cp -f "$TEMP_DIR/restart.sh" "$SCRIPT_DIR/restart.sh"
 cp -f "$TEMP_DIR/force_update.sh" "$SCRIPT_DIR/force_update.sh"
 cp -f "$TEMP_DIR/cmd/"* "$SCRIPT_DIR/cmd/"
-cp -f -p "$TEMP_DIR/scripts"* "$SCRIPT_DIR/scripts/"
+cp -f "$TEMP_DIR/scripts/"* "$SCRIPT_DIR/scripts/"
+
 rm -rf "$TEMP_DIR"
 
 echo "Исправление прав доступа и формата файлов..."
 # Конвертация в формат Unix и предоставление прав на выполнение
-SCRIPTS="bot.py pre_run.sh restart.sh run_bot.sh update.sh force_update.sh"
+SCRIPTS="bot.py pre_run.sh restart.sh run_bot.sh update.sh force_update.sh scripts/sms_manager.sh"
 for script in $SCRIPTS; do
   if [ -f "$SCRIPT_DIR/$script" ]; then
     dos2unix "$SCRIPT_DIR/$script"
