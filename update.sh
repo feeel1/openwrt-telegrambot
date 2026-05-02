@@ -63,10 +63,14 @@ sleep 2
 # Удаление и создание временной директории
 rm -rf "$TEMP_DIR"
 mkdir -p "$TEMP_DIR/cmd"
+mkdir -p "$TEMP_DIR/scripts"
 
-# Список файлов для загрузки
-FILES="bot.py VERSION run_bot.sh update.sh pre_run.sh restart.sh force_update.sh"
-CMD_FILES="akses.py dhcp_leases.py force_update.py help.py interface.py openclash.py reboot.py reload_bot.py status.py update.py terminal.py cekmodule.py wan.py"
+# 1. Список файлов в КОРНЕ репозитория
+FILES="bot.py VERSION run_bot.sh update.sh pre_run.sh restart.sh force_update.sh sms_manager.sh"
+# 2. Список файлов в папке CMD
+CMD_FILES="sms_qmi.py akses.py dhcp_leases.py force_update.py help.py interface.py openclash.py reboot.py reload_bot.py status.py update.py terminal.py cekmodule.py wan.py"
+# 3. Список файлов в папке SCRIPTS
+SCRIPT_FILES="sms_manager.sh"
 
 # Загрузка основных файлов
 for file in $FILES; do
@@ -101,7 +105,7 @@ cp -f "$TEMP_DIR/pre_run.sh" "$SCRIPT_DIR/pre_run.sh"
 cp -f "$TEMP_DIR/restart.sh" "$SCRIPT_DIR/restart.sh"
 cp -f "$TEMP_DIR/force_update.sh" "$SCRIPT_DIR/force_update.sh"
 cp -f "$TEMP_DIR/cmd/"* "$SCRIPT_DIR/cmd/"
-
+cp -f -p "$TEMP_DIR/scripts"* "$SCRIPT_DIR/scripts/"
 rm -rf "$TEMP_DIR"
 
 echo "Исправление прав доступа и формата файлов..."
