@@ -91,7 +91,7 @@ for file in $CMD_FILES; do
   fi
 done
 
-# Загрузка файлов скриптов (ИСПРАВЛЕНО: загрузка из папки scripts)
+# Загрузка файлов скриптов
 for file in $SCRIPT_FILES; do
   wget -qO "$TEMP_DIR/scripts/$file" "$REPO_URL/scripts/$file"
   if [ $? -ne 0 ]; then
