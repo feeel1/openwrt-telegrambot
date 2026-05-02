@@ -5,7 +5,7 @@ from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 from telegram.helpers import escape_markdown
 
-VERSION = "1.0.0)"
+VERSION = "1.0.0"
 IS_MENU_COMMAND = True
 # Пути к ресурсам
 SH_SCRIPT = "/www/assisten/bot/scripts/sms_manager.sh"
