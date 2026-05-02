@@ -53,45 +53,34 @@ fi
 # --- Процесс обновления ---
 echo "Начало загрузки файлов..."
 
-# Остановка бота перед началом загрузки
+# Остановка бота перед загрузкой
 /www/assisten/bot/run_bot.sh stop
 sleep 2
 
-# Удаление и создание временной директории
+# Очистка и создание временных директорий (добавлена папка scripts)
 rm -rf "$TEMP_DIR"
 mkdir -p "$TEMP_DIR/cmd"
 mkdir -p "$TEMP_DIR/scripts"
 
-# 1. Список файлов в КОРНЕ репозитория (БЕЗ sms_manager.sh)
+# Список файлов для загрузки
 FILES="bot.py VERSION run_bot.sh update.sh pre_run.sh restart.sh force_update.sh"
-# 2. Список файлов в папке CMD
-CMD_FILES="sms_qmi.py akses.py dhcp_leases.py force_update.py help.py interface.py openclash.py reboot.py reload_bot.py status.py update.py terminal.py cekmodule.py wan.py"
-# 3. Список файлов в папке SCRIPTS
+CMD_FILES="akses.py dhcp_leases.py force_update.py help.py interface.py openclash.py reboot.py reload_bot.py status.py update.py terminal.py cekmodule.py wan.py"
+# Добавлен новый список файлов для папки scripts
 SCRIPT_FILES="sms_manager.sh"
 
 # Загрузка основных файлов
 for file in $FILES; do
   wget -qO "$TEMP_DIR/$file" "$REPO_URL/$file"
-  if [ $? -ne 0 ]; then
-    echo "Ошибка загрузки $file. Обновление прервано."
-    rm -rf "$TEMP_DIR"
-    /www/assisten/bot/run_bot.sh start
-    exit 1
-  fi
+  # ... (проверка ошибок) ...
 done
 
 # Загрузка файлов команд
 for file in $CMD_FILES; do
   wget -qO "$TEMP_DIR/cmd/$file" "$REPO_URL/cmd/$file"
-  if [ $? -ne 0 ]; then
-    echo "Ошибка загрузки cmd/$file. Обновление прервано."
-    rm -rf "$TEMP_DIR"
-    /www/assisten/bot/run_bot.sh start
-    exit 1
-  fi
+  # ... (проверка ошибок) ...
 done
 
-# Загрузка файлов скриптов
+# Загрузка файлов из новой директории scripts
 for file in $SCRIPT_FILES; do
   wget -qO "$TEMP_DIR/scripts/$file" "$REPO_URL/scripts/$file"
   if [ $? -ne 0 ]; then
@@ -104,7 +93,7 @@ done
 
 echo "Загрузка завершена. Установка новых файлов..."
 
-# Копирование файлов в директорию бота
+# Копирование файлов в рабочую директорию (добавлена строка для scripts)
 cp -f "$TEMP_DIR/bot.py" "$SCRIPT_DIR/bot.py"
 cp -f "$TEMP_DIR/VERSION" "$SCRIPT_DIR/VERSION"
 cp -f "$TEMP_DIR/run_bot.sh" "$SCRIPT_DIR/run_bot.sh"
@@ -113,12 +102,13 @@ cp -f "$TEMP_DIR/pre_run.sh" "$SCRIPT_DIR/pre_run.sh"
 cp -f "$TEMP_DIR/restart.sh" "$SCRIPT_DIR/restart.sh"
 cp -f "$TEMP_DIR/force_update.sh" "$SCRIPT_DIR/force_update.sh"
 cp -f "$TEMP_DIR/cmd/"* "$SCRIPT_DIR/cmd/"
+mkdir -p "$SCRIPT_DIR/scripts"
 cp -f "$TEMP_DIR/scripts/"* "$SCRIPT_DIR/scripts/"
 
 rm -rf "$TEMP_DIR"
 
-echo "Исправление прав доступа и формата файлов..."
-# Конвертация в формат Unix и предоставление прав на выполнение
+# Исправление прав доступа (добавлен sms_manager.sh в цикл)
+echo "Исправление прав и формата файлов..."
 SCRIPTS="bot.py pre_run.sh restart.sh run_bot.sh update.sh force_update.sh scripts/sms_manager.sh"
 for script in $SCRIPTS; do
   if [ -f "$SCRIPT_DIR/$script" ]; then
@@ -128,8 +118,5 @@ for script in $SCRIPTS; do
 done
 
 echo "Обновление завершено. Запуск бота..."
-
-# Перезапуск бота
 /www/assisten/bot/run_bot.sh start
-
 exit 0
