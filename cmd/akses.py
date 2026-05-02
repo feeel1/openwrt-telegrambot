@@ -54,7 +54,7 @@ async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_da
     return
 
 async def show_access_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_device: str, new_message=False):
-    """Отображает меню управления разрешенными пользователями.""""
+    """Отображает меню управления разрешенными пользователями."""
     keyboard = [
         [InlineKeyboardButton("Просмотреть пользователей", callback_data=f"akses|view|{selected_device}")],
         [InlineKeyboardButton("Добавить себя", callback_data=f"akses|add_self|{selected_device}")],
