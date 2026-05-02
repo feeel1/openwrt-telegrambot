@@ -30,16 +30,26 @@
         │   ├── cmd/           <<<<<<<<<<< основная папка с модулями команд
         │   │   ├── __init__.py
         │   │   ├── akses.py
+        │   │   ├── cekmodule.py
         │   │   ├── dhcp_leases.py
+        │   │   ├── fors_update.py
+        │   │   ├── help.py
         │   │   ├── interface.py
         │   │   ├── openclash.py
         │   │   ├── reboot.py
         │   │   ├── reload_bot.py
         │   │   ├── status.py
-        │   │   └── update.py
+        │   │   ├── terminal.py
+        │   │   ├── update.py
+        │   │   └── wan.py
         │   ├── bot.py         <<<<<<<<<<< основной скрипт для приема и выполнения команд.
         │   ├── README.md
         │   ├── restart.sh
+        │   ├── update.ch
+        │   ├── force_update.sh                          
+        │   ├── perintah-module.md
+        │   ├── pre_run.sh
+        │   ├── processed_commands.txt
         │   ├── run_bot.sh     <<<<<<<<<<< скрипт исполнения для запуска bot.py
         │   ├── akses.txt      <<<<<<<<<<< содержит ID, которые смогут обращаться к боту
         │   └── token.txt      <<<<<<<<<<< содержит токен бота
