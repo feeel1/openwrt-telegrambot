@@ -18,14 +18,14 @@ elif [ "$1" = "--check" ]; then
     CHECK_ONLY=1
 fi
 
-# --- Проверка верси ---
+# --- Проверка версии ---
 echo "Проверка версии..."
 if [ -f "$VERSION_FILE" ]; then
     LOCAL_VERSION=$(cat "$VERSION_FILE")
 else
     LOCAL_VERSION="0.0"
 fi
-echo "Versi lokal: $LOCAL_VERSION"
+echo "Локальная версия: $LOCAL_VERSION"
 
 GITHUB_VERSION=$(wget -qO - "$REPO_URL/VERSION")
 if [ -z "$GITHUB_VERSION" ]; then
@@ -36,16 +36,15 @@ if [ -z "$GITHUB_VERSION" ]; then
     /www/assisten/bot/run_bot.sh start
     exit 1
 fi
-echo "Versi GitHub: $GITHUB_VERSION"
+echo "Версия на GitHub: $GITHUB_VERSION"
 
-# Если включен режим только проверки, выход после отображения версий
 if [ $CHECK_ONLY -eq 1 ]; then
     exit 0
 fi
 
-# --- Сравнение версий (если не принудительное обновление) ---
+# --- Сравнение версий ---
 if [ $FORCE_UPDATE -eq 0 ] && [ "$LOCAL_VERSION" = "$GITHUB_VERSION" ]; then
-    echo "Установлена актуальная версия бота. Загрузка не требуется."
+    echo "Установлена актуальная версия. Обновление не требуется."
     /www/assisten/bot/run_bot.sh start
     exit 0
 fi
@@ -53,70 +52,66 @@ fi
 # --- Процесс обновления ---
 echo "Начало загрузки файлов..."
 
-# Остановка бота перед загрузкой
 /www/assisten/bot/run_bot.sh stop
 sleep 2
 
-# Очистка и создание временных директорий (добавлена папка scripts)
 rm -rf "$TEMP_DIR"
 mkdir -p "$TEMP_DIR/cmd"
 mkdir -p "$TEMP_DIR/scripts"
 
-# Список файлов для загрузки
 FILES="bot.py VERSION run_bot.sh update.sh pre_run.sh restart.sh force_update.sh"
-CMD_FILES="akses.py dhcp_leases.py force_update.py help.py interface.py openclash.py reboot.py reload_bot.py status.py update.py terminal.py cekmodule.py wan.py"
-# Добавлен новый список файлов для папки scripts
+CMD_FILES="akses.py dhcp_leases.py force_update.py help.py interface.py openclash.py reboot.py reload_bot.py status.py update.py terminal.py cekmodule.py wan.py sms_qmi.py"
 SCRIPT_FILES="sms_manager.sh"
 
-# Загрузка основных файлов
-for file in $FILES; do
-  wget -qO "$TEMP_DIR/$file" "$REPO_URL/$file"
-  # ... (проверка ошибок) ...
-done
+# Функция для загрузки с проверкой (чтобы не дублировать код)
+download_file() {
+    local folder=$1
+    local file=$2
+    local target="$TEMP_DIR/$folder$file"
+    
+    wget -qO "$target" "$REPO_URL/$folder$file"
+    if [ $? -ne 0 ]; then
+        echo "Ошибка загрузки $folder$file. Отмена."
+        rm -rf "$TEMP_DIR"
+        /www/assisten/bot/run_bot.sh start
+        exit 1
+    fi
+}
 
-# Загрузка файлов команд
-for file in $CMD_FILES; do
-  wget -qO "$TEMP_DIR/cmd/$file" "$REPO_URL/cmd/$file"
-  # ... (проверка ошибок) ...
-done
+# Загрузка всех групп файлов
+for f in $FILES; do download_file "" "$f"; done
+for f in $CMD_FILES; do download_file "cmd/" "$f"; done
+for f in $SCRIPT_FILES; do download_file "scripts/" "$f"; done
 
-# Загрузка файлов из новой директории scripts
-for file in $SCRIPT_FILES; do
-  wget -qO "$TEMP_DIR/scripts/$file" "$REPO_URL/scripts/$file"
-  if [ $? -ne 0 ]; then
-    echo "Ошибка загрузки scripts/$file. Обновление прервано."
-    rm -rf "$TEMP_DIR"
-    /www/assisten/bot/run_bot.sh start
-    exit 1
-  fi
-done
+echo "Загрузка завершена. Установка..."
 
-echo "Загрузка завершена. Установка новых файлов..."
-
-# Копирование файлов в рабочую директорию (добавлена строка для scripts)
-cp -f "$TEMP_DIR/bot.py" "$SCRIPT_DIR/bot.py"
-cp -f "$TEMP_DIR/VERSION" "$SCRIPT_DIR/VERSION"
-cp -f "$TEMP_DIR/run_bot.sh" "$SCRIPT_DIR/run_bot.sh"
-cp -f "$TEMP_DIR/update.sh" "$SCRIPT_DIR/update.sh"
-cp -f "$TEMP_DIR/pre_run.sh" "$SCRIPT_DIR/pre_run.sh"
-cp -f "$TEMP_DIR/restart.sh" "$SCRIPT_DIR/restart.sh"
-cp -f "$TEMP_DIR/force_update.sh" "$SCRIPT_DIR/force_update.sh"
+# Копирование (используем -r для папок, если нужно, но тут пофайлово надёжнее)
+cp -f "$TEMP_DIR/bot.py" "$SCRIPT_DIR/"
+cp -f "$TEMP_DIR/VERSION" "$SCRIPT_DIR/"
+cp -f "$TEMP_DIR/run_bot.sh" "$SCRIPT_DIR/"
+cp -f "$TEMP_DIR/update.sh" "$SCRIPT_DIR/"
+cp -f "$TEMP_DIR/pre_run.sh" "$SCRIPT_DIR/"
+cp -f "$TEMP_DIR/restart.sh" "$SCRIPT_DIR/"
+cp -f "$TEMP_DIR/force_update.sh" "$SCRIPT_DIR/"
 cp -f "$TEMP_DIR/cmd/"* "$SCRIPT_DIR/cmd/"
+
+# Важно: создаем папку scripts в целевой директории, если её нет
 mkdir -p "$SCRIPT_DIR/scripts"
 cp -f "$TEMP_DIR/scripts/"* "$SCRIPT_DIR/scripts/"
 
 rm -rf "$TEMP_DIR"
 
-# Исправление прав доступа (добавлен sms_manager.sh в цикл)
-echo "Исправление прав и формата файлов..."
-SCRIPTS="bot.py pre_run.sh restart.sh run_bot.sh update.sh force_update.sh scripts/sms_manager.sh"
-for script in $SCRIPTS; do
-  if [ -f "$SCRIPT_DIR/$script" ]; then
-    dos2unix "$SCRIPT_DIR/$script"
-    chmod +x "$SCRIPT_DIR/$script"
-  fi
+echo "Настройка прав доступа..."
+# Добавляем файлы, которые должны быть исполняемыми
+FOR_CHMOD="bot.py pre_run.sh restart.sh run_bot.sh update.sh force_update.sh scripts/sms_manager.sh cmd/sms_qmi.py"
+for s in $FOR_CHMOD; do
+    if [ -f "$SCRIPT_DIR/$s" ]; then
+        dos2unix "$SCRIPT_DIR/$s"
+        chmod +x "$SCRIPT_DIR/$s"
+    fi
 done
 
-echo "Обновление завершено. Запуск бота..."
+echo "Обновление завершено. Запуск..."
 /www/assisten/bot/run_bot.sh start
+
 exit 0
