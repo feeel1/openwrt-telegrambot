@@ -57,6 +57,7 @@ HELP_TEXT = """
 • Terminal (v3.5.0) - <code>CMD</code>
 • Update (v3.5.0) - <code>MENU</code>
 • Wan (v1.0.2) - <code>MENU</code>
+• Sms_qmi (v1.0.0) - <code>MENU</code>
 </pre>
 
 <b>force_update.py</b>
