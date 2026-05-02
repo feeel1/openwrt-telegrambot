@@ -4,74 +4,104 @@ import os
 import logging
 import subprocess
 import asyncio
-from telegram import Update
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
-from telegram import InlineKeyboardMarkup, InlineKeyboardButton, Message
 
-# versi modul
-VERSION = "3.5.0"
+# Версия модуля
+VERSION = "3.5.1"
 
+# Флаг для отображения в главном меню
 IS_MENU_COMMAND = True
 
 logger = logging.getLogger(__name__)
 
 async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_data: str = None) -> None:
     """
-    Обрабатывает команду /update и callback от кнопок.
-    Функция отображает локальную версию и версию на GitHub,
-    предлагая кнопку обновления, если доступна новая версия.
+    Обрабатывает команду /update и нажатия кнопок.
+    Проверяет версии через update.sh и запускает процесс обновления.
     """
     
     chat_id = update.effective_chat.id
+    # Определяем путь к скрипту обновления (на уровень выше от папки cmd)
     SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    UPDATE_SCRIPT = os.path.join(SCRIPT_DIR, 'update.sh')
     
+    # --- БЛОК 1: ЗАПУСК УСТАНОВКИ (когда нажата кнопка Install) ---
+    if command_data == "install":
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text="🚀 *Запуск обновления...*\nБот будет перезапущен. Пожалуйста, подождите.", 
+            parse_mode='Markdown'
+        )
+        try:
+            # Вызов скрипта с флагом --force для принудительной загрузки
+            await asyncio.create_subprocess_exec('/bin/sh', UPDATE_SCRIPT, '--force')
+            # Завершаем выполнение, так как скрипт скоро убьет процесс бота для обновления
+            return
+        except Exception as e:
+            logger.error(f"Ошибка при запуске обновления: {e}")
+            await context.bot.send_message(chat_id=chat_id, text="❌ Ошибка при выполнении скрипта обновления.")
+            return
+
+    # --- БЛОК 2: ПРОВЕРКА СТАТУСА (когда вызвана команда или нажата кнопка Назад) ---
     try:
-        # Вызов скрипта update.sh для проверки статуса версий
+        # Вызов скрипта в режиме проверки
         process = await asyncio.create_subprocess_exec(
-            '/bin/sh', os.path.join(SCRIPT_DIR, 'update.sh'), '--check',
+            '/bin/sh', UPDATE_SCRIPT, '--check',
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
         stdout, stderr = await process.communicate()
-        
         output = stdout.decode('utf-8').strip()
         
-        # Разделение вывода на строки и поиск версий
+        # Парсинг вывода скрипта для извлечения версий
         lines = output.split('\n')
         local_version = "Не определено"
         github_version = "Не определено"
         
         for line in lines:
-            # Примечание: метки "Versi lokal" и "Versi GitHub" должны соответствовать выводу вашего update.sh
             if "Versi lokal:" in line:
                 local_version = line.split(':')[1].strip()
             elif "Versi GitHub:" in line:
                 github_version = line.split(':')[1].strip()
         
-        message_text = f"⚙️ **Статус обновления**\n"
+        message_text = f"⚙️ **Статус обновления**\n\n"
         message_text += f"Локальная версия: `{local_version}`\n"
-        message_text += f"Версия GitHub: `{github_version}`\n"
+        message_text += f"Версия GitHub: `{github_version}`\n\n"
         
         keyboard = []
+        
+        # Проверка на наличие новой версии
         if local_version != "Не определено" and github_version != "Не определено" and local_version != github_version:
-            message_text += "Доступно обновление! Нажмите кнопку ниже для установки."
-            keyboard.append([InlineKeyboardButton("Install Update", callback_data="install_update")])
+            message_text += "✨ Доступна новая версия! Желаете обновить?"
+            # callback_data: имя_модуля|аргумент
+            keyboard.append([InlineKeyboardButton("✅ Install Update", callback_data="update|install")])
         else:
-            message_text += "Вы используете актуальную версию."
+            message_text += "✅ У вас установлена последняя версия."
+            
+        # Добавляем кнопку "Назад" в любом случае
+        keyboard.append([InlineKeyboardButton("⬅️ Назад", callback_data="help")])
             
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text=message_text,
-            reply_markup=reply_markup,
-            parse_mode='Markdown'
-        )
-        logger.info(f"Статус обновления отправлен в чат {chat_id}.")
+        # Если это нажатие на кнопку — редактируем текущее сообщение, если команда — шлем новое
+        if update.callback_query:
+            await update.callback_query.edit_message_text(
+                text=message_text, 
+                reply_markup=reply_markup, 
+                parse_mode='Markdown'
+            )
+        else:
+            await context.bot.send_message(
+                chat_id=chat_id, 
+                text=message_text, 
+                reply_markup=reply_markup, 
+                parse_mode='Markdown'
+            )
         
     except Exception as e:
-        logger.error(f"Ошибка при проверке обновлений: {e}")
+        logger.error(f"Ошибка проверки обновлений: {e}")
         await context.bot.send_message(
-            chat_id=chat_id,
-            text="❌ Произошла ошибка при проверке обновлений."
+            chat_id=chat_id, 
+            text="❌ Ошибка: не удалось связаться со скриптом обновления."
         )
