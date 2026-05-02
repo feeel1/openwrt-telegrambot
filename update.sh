@@ -1,5 +1,4 @@
 #!/bin/sh
-
 # Определение расположения и URL репозитория
 SCRIPT_DIR="/www/assisten/bot"
 GITHUB_REPO="feeel1/openwrt-telegrambot/"
