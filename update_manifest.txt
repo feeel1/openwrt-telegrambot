@@ -6,7 +6,6 @@ update.sh
 pre_run.sh
 restart.sh
 force_update.sh
-cmd/__init__.py
 cmd/akses.py
 cmd/cekmodule.py
 cmd/dhcp_leases.py
@@ -21,5 +20,5 @@ cmd/status.py
 cmd/terminal.py
 cmd/update.py
 cmd/wan.py
-Cmd/test.txt
+cmd/test.txt
 scripts/sms_manager.sh
