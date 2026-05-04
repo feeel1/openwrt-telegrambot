@@ -1,12 +1,12 @@
 #!/bin/sh
-# Определение расположения и URL репозитория
+
 SCRIPT_DIR="/www/assisten/bot"
-GITHUB_REPO="feeel1/openwrt-telegrambot/"
-REPO_URL="https://raw.githubusercontent.com/$GITHUB_REPO/master"
+GITHUB_REPO="feeel1/openwrt-telegrambot"
+RAW_BASE_URL="https://raw.githubusercontent.com/$GITHUB_REPO/master"
 VERSION_FILE="$SCRIPT_DIR/VERSION"
+MANIFEST_FILE="$SCRIPT_DIR/update_manifest.txt"
 TEMP_DIR="/tmp/bot_update"
 
-# --- Обработка аргументов ---
 FORCE_UPDATE=0
 CHECK_ONLY=0
 
@@ -17,7 +17,6 @@ elif [ "$1" = "--check" ]; then
     CHECK_ONLY=1
 fi
 
-# --- Проверка версии ---
 echo "Проверка версии..."
 if [ -f "$VERSION_FILE" ]; then
     LOCAL_VERSION=$(cat "$VERSION_FILE")
@@ -26,7 +25,7 @@ else
 fi
 echo "Локальная версия: $LOCAL_VERSION"
 
-GITHUB_VERSION=$(wget -qO - "$REPO_URL/VERSION")
+GITHUB_VERSION=$(wget -qO - "$RAW_BASE_URL/VERSION")
 if [ -z "$GITHUB_VERSION" ]; then
     echo "Не удалось получить версию с GitHub."
     if [ $CHECK_ONLY -eq 1 ]; then
@@ -41,74 +40,88 @@ if [ $CHECK_ONLY -eq 1 ]; then
     exit 0
 fi
 
-# --- Сравнение версий ---
 if [ $FORCE_UPDATE -eq 0 ] && [ "$LOCAL_VERSION" = "$GITHUB_VERSION" ]; then
     echo "Установлена актуальная версия. Обновление не требуется."
     /www/assisten/bot/run_bot.sh start
     exit 0
 fi
 
-# --- Процесс обновления ---
 echo "Начало загрузки файлов..."
 
 /www/assisten/bot/run_bot.sh stop
 sleep 2
 
 rm -rf "$TEMP_DIR"
-mkdir -p "$TEMP_DIR/cmd"
-mkdir -p "$TEMP_DIR/scripts"
+mkdir -p "$TEMP_DIR"
 
-FILES="bot.py VERSION run_bot.sh update.sh pre_run.sh restart.sh force_update.sh"
-CMD_FILES="akses.py dhcp_leases.py force_update.py help.py interface.py openclash.py reboot.py reload_bot.py status.py update.py terminal.py cekmodule.py wan.py sms_qmi.py"
-SCRIPT_FILES="sms_manager.sh"
-
-# Функция для загрузки с проверкой (чтобы не дублировать код)
 download_file() {
-    local folder=$1
-    local file=$2
-    local target="$TEMP_DIR/$folder$file"
-    
-    wget -qO "$target" "$REPO_URL/$folder$file"
-    if [ $? -ne 0 ]; then
-        echo "Ошибка загрузки $folder$file. Отмена."
+    rel_path="$1"
+    target_path="$TEMP_DIR/$rel_path"
+    target_dir=$(dirname "$target_path")
+
+    mkdir -p "$target_dir"
+    wget -qO "$target_path" "$RAW_BASE_URL/$rel_path"
+    if [ $? -ne 0 ] || [ ! -s "$target_path" ]; then
+        echo "Ошибка загрузки $rel_path. Отмена."
         rm -rf "$TEMP_DIR"
         /www/assisten/bot/run_bot.sh start
         exit 1
     fi
 }
 
-# Загрузка всех групп файлов
-for f in $FILES; do download_file "" "$f"; done
-for f in $CMD_FILES; do download_file "cmd/" "$f"; done
-for f in $SCRIPT_FILES; do download_file "scripts/" "$f"; done
+if [ ! -f "$MANIFEST_FILE" ]; then
+    echo "Файл манифеста $MANIFEST_FILE не найден."
+    /www/assisten/bot/run_bot.sh start
+    exit 1
+fi
+
+download_file "VERSION"
+
+while IFS= read -r rel_path || [ -n "$rel_path" ]; do
+    case "$rel_path" in
+        ""|\#*)
+            continue
+            ;;
+    esac
+    download_file "$rel_path"
+done < "$MANIFEST_FILE"
 
 echo "Загрузка завершена. Установка..."
 
-# Копирование (используем -r для папок, если нужно, но тут пофайлово надёжнее)
-cp -f "$TEMP_DIR/bot.py" "$SCRIPT_DIR/"
-cp -f "$TEMP_DIR/VERSION" "$SCRIPT_DIR/"
-cp -f "$TEMP_DIR/run_bot.sh" "$SCRIPT_DIR/"
-cp -f "$TEMP_DIR/update.sh" "$SCRIPT_DIR/"
-cp -f "$TEMP_DIR/pre_run.sh" "$SCRIPT_DIR/"
-cp -f "$TEMP_DIR/restart.sh" "$SCRIPT_DIR/"
-cp -f "$TEMP_DIR/force_update.sh" "$SCRIPT_DIR/"
-cp -f "$TEMP_DIR/cmd/"* "$SCRIPT_DIR/cmd/"
+while IFS= read -r rel_path || [ -n "$rel_path" ]; do
+    case "$rel_path" in
+        ""|\#*)
+            continue
+            ;;
+    esac
 
-# Важно: создаем папку scripts в целевой директории, если её нет
-mkdir -p "$SCRIPT_DIR/scripts"
-cp -f "$TEMP_DIR/scripts/"* "$SCRIPT_DIR/scripts/"
-
-rm -rf "$TEMP_DIR"
+    src_path="$TEMP_DIR/$rel_path"
+    dst_path="$SCRIPT_DIR/$rel_path"
+    dst_dir=$(dirname "$dst_path")
+    mkdir -p "$dst_dir"
+    cp -f "$src_path" "$dst_path"
+done < "$MANIFEST_FILE"
 
 echo "Настройка прав доступа..."
-# Добавляем файлы, которые должны быть исполняемыми
-FOR_CHMOD="bot.py pre_run.sh restart.sh run_bot.sh update.sh force_update.sh scripts/sms_manager.sh cmd/sms_qmi.py"
-for s in $FOR_CHMOD; do
-    if [ -f "$SCRIPT_DIR/$s" ]; then
-        dos2unix "$SCRIPT_DIR/$s"
-        chmod +x "$SCRIPT_DIR/$s"
+while IFS= read -r rel_path || [ -n "$rel_path" ]; do
+    case "$rel_path" in
+        ""|\#*)
+            continue
+            ;;
+    esac
+
+    dst_path="$SCRIPT_DIR/$rel_path"
+    if [ -f "$dst_path" ]; then
+        dos2unix "$dst_path" >/dev/null 2>&1
+        case "$dst_path" in
+            *.sh|*.py)
+                chmod +x "$dst_path"
+                ;;
+        esac
     fi
-done
+done < "$MANIFEST_FILE"
+
+rm -rf "$TEMP_DIR"
 
 echo "Обновление завершено. Запуск..."
 /www/assisten/bot/run_bot.sh start

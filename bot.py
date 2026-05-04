@@ -29,6 +29,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 TOKEN_FILE = os.path.join(SCRIPT_DIR, "token.txt")
 AKSES_FILE = os.path.join(SCRIPT_DIR, "akses.txt")
 CMD_FOLDER = os.path.join(SCRIPT_DIR, "cmd")
+MAIN_CHAT_IDS_FILE = os.path.join(SCRIPT_DIR, "main_chat_ids.txt")
 PID_FILE = "/tmp/run_bot.pid"
 
 # --- Global State ---
@@ -63,6 +64,27 @@ def load_allowed_users(filename=AKSES_FILE):
     if new_users != ALLOWED_USERS:
         ALLOWED_USERS = new_users
         logger.info(f"Список разрешенных ID обновлен: {ALLOWED_USERS}")
+
+def load_main_chat_ids(filename=MAIN_CHAT_IDS_FILE):
+    """Читает сохраненные chat_id для автоматического восстановления меню."""
+    chat_ids = set()
+    if os.path.exists(filename):
+        with open(filename, "r") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    chat_ids.add(int(line))
+                except ValueError:
+                    logger.warning(f"Некорректный chat_id в {filename}: {line}")
+    return chat_ids
+
+def save_main_chat_ids(chat_ids, filename=MAIN_CHAT_IDS_FILE):
+    """Сохраняет chat_id чатов, в которые бот может вернуть главное меню после перезапуска."""
+    with open(filename, "w") as f:
+        for chat_id in sorted(chat_ids):
+            f.write(f"{chat_id}\n")
 
 def check_access(func):
     """Декоратор для проверки наличия доступа у пользователя."""
@@ -195,6 +217,29 @@ async def clear_inactive_devices(context: ContextTypes.DEFAULT_TYPE):
     
     logger.info(f"Неактивные устройства удалены: {inactive_devices}")
 
+async def restore_main_menu(context: ContextTypes.DEFAULT_TYPE):
+    """После перезапуска возвращает главное меню в сохраненные чаты."""
+    global ACTIVE_DEVICES
+
+    chat_ids = context.application.bot_data.get('main_chat_ids', set())
+    if not chat_ids:
+        return
+
+    ACTIVE_DEVICES.clear()
+    ACTIVE_DEVICES.add(DEVICE_ID)
+
+    await asyncio.sleep(5)
+    sorted_active_devices = sorted(list(ACTIVE_DEVICES))
+    if not sorted_active_devices or sorted_active_devices[0] != DEVICE_ID:
+        logger.info(f"Устройство '{DEVICE_ID}' не отправляет главное меню после рестарта, так как не является мастером.")
+        return
+
+    for chat_id in chat_ids:
+        try:
+            await send_main_menu_to_chat(chat_id, context, sorted_active_devices)
+        except Exception as e:
+            logger.error(f"Ошибка автоматической отправки главного меню в чат {chat_id}: {e}")
+
 @check_access
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обрабатывает команду /start и отображает главное меню бота."""
@@ -204,6 +249,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if 'main_chat_ids' not in context.application.bot_data:
         context.application.bot_data['main_chat_ids'] = set()
     context.application.bot_data['main_chat_ids'].add(chat_id)
+    save_main_chat_ids(context.application.bot_data['main_chat_ids'])
     
     ACTIVE_DEVICES.clear()
     ACTIVE_DEVICES.add(DEVICE_ID)
@@ -317,6 +363,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def send_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, devices_list) -> Message:
     """Отправляет главное меню выбора устройств."""
+    if update.callback_query:
+        return await send_main_menu_to_chat(update.callback_query.message.chat_id, context, devices_list)
+    return await send_main_menu_to_chat(update.effective_chat.id, context, devices_list)
+
+async def send_main_menu_to_chat(chat_id: int, context: ContextTypes.DEFAULT_TYPE, devices_list) -> Message:
+    """Отправляет главное меню выбора устройств в конкретный чат."""
     keyboard = [[InlineKeyboardButton(device, callback_data=f"select|{device}")] for device in sorted(devices_list)]
     
 #    update_script_path = os.path.join(SCRIPT_DIR, 'update.sh')
@@ -325,16 +377,11 @@ async def send_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, dev
         
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    if update.callback_query:
-        message = await update.callback_query.message.reply_text(
-            "Привет! Пожалуйста, выберите устройство для управления:",
-            reply_markup=reply_markup
-        )
-    else:
-        message = await update.effective_message.reply_text(
-            "Halo! Silakan pilih perangkat yang ingin Anda kelola:",
-            reply_markup=reply_markup
-        )
+    message = await context.bot.send_message(
+        chat_id=chat_id,
+        text="Привет! Пожалуйста, выберите устройство для управления:",
+        reply_markup=reply_markup
+    )
     logger.info("Меню выбора устройств успешно отправлено.")
     return message
 
@@ -375,6 +422,7 @@ def main() -> None:
     load_allowed_users()
     
     application = Application.builder().token(token).build()
+    application.bot_data['main_chat_ids'] = load_main_chat_ids()
     
     load_commands(application)
     application.add_handler(CommandHandler("start", check_access(start)))
@@ -386,6 +434,7 @@ def main() -> None:
     # Интервалы сигналов присутствия и очистки неактивных устройств
     application.job_queue.run_repeating(send_presence, interval=180, first=5)
     application.job_queue.run_repeating(clear_inactive_devices, interval=600, first=10)
+    application.job_queue.run_once(restore_main_menu, when=8)
 
     logger.info("Приложение запущено. Бот активен.")
     
