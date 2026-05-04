@@ -1,6 +1,7 @@
 # Relative paths to download during update
 bot.py
 VERSION
+update_manifest.txt
 run_bot.sh
 test.txt
 update.sh

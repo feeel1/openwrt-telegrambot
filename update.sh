@@ -4,8 +4,8 @@ SCRIPT_DIR="/www/assisten/bot"
 GITHUB_REPO="feeel1/openwrt-telegrambot"
 RAW_BASE_URL="https://raw.githubusercontent.com/$GITHUB_REPO/master"
 VERSION_FILE="$SCRIPT_DIR/VERSION"
-MANIFEST_FILE="$SCRIPT_DIR/update_manifest.txt"
 TEMP_DIR="/tmp/bot_update"
+MANIFEST_PATH="$TEMP_DIR/update_manifest.txt"
 
 FORCE_UPDATE=0
 CHECK_ONLY=0
@@ -61,7 +61,7 @@ download_file() {
 
     mkdir -p "$target_dir"
     wget -qO "$target_path" "$RAW_BASE_URL/$rel_path"
-    if [ $? -ne 0 ] || [ ! -s "$target_path" ]; then
+    if [ $? -ne 0 ]; then
         echo "Ошибка загрузки $rel_path. Отмена."
         rm -rf "$TEMP_DIR"
         /www/assisten/bot/run_bot.sh start
@@ -69,13 +69,8 @@ download_file() {
     fi
 }
 
-if [ ! -f "$MANIFEST_FILE" ]; then
-    echo "Файл манифеста $MANIFEST_FILE не найден."
-    /www/assisten/bot/run_bot.sh start
-    exit 1
-fi
-
 download_file "VERSION"
+download_file "update_manifest.txt"
 
 while IFS= read -r rel_path || [ -n "$rel_path" ]; do
     case "$rel_path" in
@@ -84,7 +79,7 @@ while IFS= read -r rel_path || [ -n "$rel_path" ]; do
             ;;
     esac
     download_file "$rel_path"
-done < "$MANIFEST_FILE"
+done < "$MANIFEST_PATH"
 
 echo "Загрузка завершена. Установка..."
 
@@ -100,7 +95,7 @@ while IFS= read -r rel_path || [ -n "$rel_path" ]; do
     dst_dir=$(dirname "$dst_path")
     mkdir -p "$dst_dir"
     cp -f "$src_path" "$dst_path"
-done < "$MANIFEST_FILE"
+done < "$MANIFEST_PATH"
 
 echo "Настройка прав доступа..."
 while IFS= read -r rel_path || [ -n "$rel_path" ]; do
@@ -119,7 +114,7 @@ while IFS= read -r rel_path || [ -n "$rel_path" ]; do
                 ;;
         esac
     fi
-done < "$MANIFEST_FILE"
+done < "$MANIFEST_PATH"
 
 rm -rf "$TEMP_DIR"
 
