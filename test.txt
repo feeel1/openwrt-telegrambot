@@ -21,5 +21,4 @@ cmd/status.py
 cmd/terminal.py
 cmd/update.py
 cmd/wan.py
-Cmd/test.txt
 scripts/sms_manager.sh
