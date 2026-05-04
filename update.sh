@@ -83,6 +83,8 @@ done < "$MANIFEST_PATH"
 
 echo "Загрузка завершена. Установка..."
 
+cp -f "$MANIFEST_PATH" "$SCRIPT_DIR/update_manifest.txt"
+
 while IFS= read -r rel_path || [ -n "$rel_path" ]; do
     case "$rel_path" in
         ""|\#*)
@@ -98,6 +100,8 @@ while IFS= read -r rel_path || [ -n "$rel_path" ]; do
 done < "$MANIFEST_PATH"
 
 echo "Настройка прав доступа..."
+dos2unix "$SCRIPT_DIR/update_manifest.txt" >/dev/null 2>&1
+
 while IFS= read -r rel_path || [ -n "$rel_path" ]; do
     case "$rel_path" in
         ""|\#*)
