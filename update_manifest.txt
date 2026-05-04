@@ -2,6 +2,7 @@
 bot.py
 VERSION
 run_bot.sh
+test.txt
 update.sh
 pre_run.sh
 restart.sh
