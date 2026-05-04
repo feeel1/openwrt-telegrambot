@@ -20,12 +20,7 @@ cmd/sms_qmi.py
 cmd/status.py
 cmd/terminal.py
 cmd/update.py
-<<<<<<< Updated upstream
 cmd/wan.py
 cmd/test.txt
-=======
-сmd/wan.py
-test.txt
->>>>>>> Stashed changes
 scripts/sms_manager.sh
 scripts/test.txt
