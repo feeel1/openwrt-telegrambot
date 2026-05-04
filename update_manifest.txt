@@ -23,3 +23,4 @@ cmd/update.py
 cmd/wan.py
 cmd/test.txt
 scripts/sms_manager.sh
+scripts/test.txt
