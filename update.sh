@@ -1,119 +1,116 @@
-import os
-import logging
-import subprocess
-import asyncio
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import ContextTypes
+#!/bin/sh
+# Определение расположения и URL репозитория
+SCRIPT_DIR="/www/assisten/bot"
+GITHUB_REPO="feeel1/openwrt-telegrambot/"
+REPO_URL="https://raw.githubusercontent.com/$GITHUB_REPO/master"
+VERSION_FILE="$SCRIPT_DIR/VERSION"
+TEMP_DIR="/tmp/bot_update"
 
-# Версия модуля
-VERSION = "3.5.3"
+# --- Обработка аргументов ---
+FORCE_UPDATE=0
+CHECK_ONLY=0
 
-# Флаг для отображения в главном меню
-IS_MENU_COMMAND = True
+if [ "$1" = "--force" ]; then
+    FORCE_UPDATE=1
+    echo "Принудительное обновление активировано."
+elif [ "$1" = "--check" ]; then
+    CHECK_ONLY=1
+fi
 
-logger = logging.getLogger(__name__)
+# --- Проверка версии ---
+echo "Проверка версии..."
+if [ -f "$VERSION_FILE" ]; then
+    LOCAL_VERSION=$(cat "$VERSION_FILE")
+else
+    LOCAL_VERSION="0.0"
+fi
+echo "Локальная версия: $LOCAL_VERSION"
 
-async def execute(update: Update, context: ContextTypes.DEFAULT_TYPE, command_data: str = None) -> None:
-    """
-    Обрабатывает команду /update и нажатия кнопок.
-    Проверяет версии через update.sh и запускает процесс обновления.
-    """
+GITHUB_VERSION=$(wget -qO - "$REPO_URL/VERSION")
+if [ -z "$GITHUB_VERSION" ]; then
+    echo "Не удалось получить версию с GitHub."
+    if [ $CHECK_ONLY -eq 1 ]; then
+        exit 1
+    fi
+    /www/assisten/bot/run_bot.sh start
+    exit 1
+fi
+echo "Версия на GitHub: $GITHUB_VERSION"
+
+if [ $CHECK_ONLY -eq 1 ]; then
+    exit 0
+fi
+
+# --- Сравнение версий ---
+if [ $FORCE_UPDATE -eq 0 ] && [ "$LOCAL_VERSION" = "$GITHUB_VERSION" ]; then
+    echo "Установлена актуальная версия. Обновление не требуется."
+    /www/assisten/bot/run_bot.sh start
+    exit 0
+fi
+
+# --- Процесс обновления ---
+echo "Начало загрузки файлов..."
+
+/www/assisten/bot/run_bot.sh stop
+sleep 2
+
+rm -rf "$TEMP_DIR"
+mkdir -p "$TEMP_DIR/cmd"
+mkdir -p "$TEMP_DIR/scripts"
+
+FILES="bot.py VERSION run_bot.sh update.sh pre_run.sh restart.sh force_update.sh"
+CMD_FILES="akses.py dhcp_leases.py force_update.py help.py interface.py openclash.py reboot.py reload_bot.py status.py update.py terminal.py cekmodule.py wan.py sms_qmi.py"
+SCRIPT_FILES="sms_manager.sh"
+
+# Функция для загрузки с проверкой (чтобы не дублировать код)
+download_file() {
+    local folder=$1
+    local file=$2
+    local target="$TEMP_DIR/$folder$file"
     
-    chat_id = update.effective_chat.id
-    # Определяем путь к скрипту обновления (на уровень выше от папки cmd)
-    SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    UPDATE_SCRIPT = os.path.join(SCRIPT_DIR, 'update.sh')
-    
-    if update.callback_query:
-        await update.callback_query.answer()
+    wget -qO "$target" "$REPO_URL/$folder$file"
+    if [ $? -ne 0 ]; then
+        echo "Ошибка загрузки $folder$file. Отмена."
+        rm -rf "$TEMP_DIR"
+        /www/assisten/bot/run_bot.sh start
+        exit 1
+    fi
+}
 
-    # --- БЛОК 1: ЗАПУСК УСТАНОВКИ ---
-    if command_data == "install":
-        msg_install = "🚀 *Запуск обновления...*\nБот будет перезапущен. Пожалуйста, подождите."
-        try:
-            if update.callback_query:
-                await update.callback_query.edit_message_text(text=msg_install, parse_mode='Markdown')
-            else:
-                await context.bot.send_message(chat_id=chat_id, text=msg_install, parse_mode='Markdown')
-            
-            # Запуск процесса обновления
-            await asyncio.create_subprocess_exec('/bin/sh', UPDATE_SCRIPT, '--force')
-            return
-        except Exception as e:
-            logger.error(f"Ошибка при запуске обновления: {e}")
-            await context.bot.send_message(chat_id=chat_id, text="❌ Ошибка при выполнении скрипта обновления.")
-            return
+# Загрузка всех групп файлов
+for f in $FILES; do download_file "" "$f"; done
+for f in $CMD_FILES; do download_file "cmd/" "$f"; done
+for f in $SCRIPT_FILES; do download_file "scripts/" "$f"; done
 
-    # --- БЛОК 2: ПРОВЕРКА СТАТУСА ---
-    try:
-        # Вызов скрипта в режиме проверки
-        process = await asyncio.create_subprocess_exec(
-            '/bin/sh', UPDATE_SCRIPT, '--check',
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        stdout, stderr = await process.communicate()
-        output = stdout.decode('utf-8').strip()
-        
-        local_version = "Не определено"
-        github_version = "Не определено"
+echo "Загрузка завершена. Установка..."
 
-        if output:
-            lines = output.split('\n')
-            for line in lines:
-                # Ищем русские ключи, которые мы прописали в update.sh
-                if "Локальная версия:" in line:
-                    local_version = line.split(':')[1].strip()
-                elif "Версия на GitHub:" in line or "Versi GitHub:" in line:
-                    github_version = line.split(':')[1].strip()
-        
-        message_text = f"⚙️ **Статус обновления**\n\n"
-        message_text += f"Локальная версия: `{local_version}`\n"
-        message_text += f"Версия GitHub: `{github_version}`\n\n"
-        
-        keyboard = []
-        if local_version != "Не определено" and github_version != "Не определено" and local_version != github_version:
-            message_text += "✨ Доступна новая версия! Желаете обновить?"
-            keyboard.append([
-                InlineKeyboardButton("✅ Обновить", callback_data="update|install"),
-                InlineKeyboardButton("⬅️ Назад", callback_data="help")
-            ])
-        else:
-            message_text += "✅ У вас установлена последняя версия."
-            keyboard.append([InlineKeyboardButton("⬅️ Назад", callback_data="help")])
-            
-        reply_markup = InlineKeyboardMarkup(keyboard)
+# Копирование (используем -r для папок, если нужно, но тут пофайлово надёжнее)
+cp -f "$TEMP_DIR/bot.py" "$SCRIPT_DIR/"
+cp -f "$TEMP_DIR/VERSION" "$SCRIPT_DIR/"
+cp -f "$TEMP_DIR/run_bot.sh" "$SCRIPT_DIR/"
+cp -f "$TEMP_DIR/update.sh" "$SCRIPT_DIR/"
+cp -f "$TEMP_DIR/pre_run.sh" "$SCRIPT_DIR/"
+cp -f "$TEMP_DIR/restart.sh" "$SCRIPT_DIR/"
+cp -f "$TEMP_DIR/force_update.sh" "$SCRIPT_DIR/"
+cp -f "$TEMP_DIR/cmd/"* "$SCRIPT_DIR/cmd/"
 
-        # Пытаемся отправить сообщение
-        try:
-            if update.callback_query:
-                await update.callback_query.edit_message_text(
-                    text=message_text, 
-                    reply_markup=reply_markup, 
-                    parse_mode='Markdown'
-                )
-            else:
-                await context.bot.send_message(
-                    chat_id=chat_id, 
-                    text=message_text, 
-                    reply_markup=reply_markup, 
-                    parse_mode='Markdown'
-                )
-        except Exception as msg_err:
-            # Если не удалось отредактировать (например, сообщение удалено), шлем новое
-            logger.warning(f"Редактирование не удалось, шлю новое: {msg_err}")
-            await context.bot.send_message(
-                chat_id=chat_id, 
-                text=message_text, 
-                reply_markup=reply_markup, 
-                parse_mode='Markdown'
-            )
-        
-    except Exception as e:
-        logger.error(f"Критическая ошибка модуля обновления: {e}")
-        error_kb = [[InlineKeyboardButton("⬅️ Назад", callback_data="help")]]
-        await context.bot.send_message(
-            chat_id=chat_id, 
-            text="❌ Не удалось получить данные от системы обновления.",
-            reply_markup=InlineKeyboardMarkup(error_kb)
-        )
+# Важно: создаем папку scripts в целевой директории, если её нет
+mkdir -p "$SCRIPT_DIR/scripts"
+cp -f "$TEMP_DIR/scripts/"* "$SCRIPT_DIR/scripts/"
+
+rm -rf "$TEMP_DIR"
+
+echo "Настройка прав доступа..."
+# Добавляем файлы, которые должны быть исполняемыми
+FOR_CHMOD="bot.py pre_run.sh restart.sh run_bot.sh update.sh force_update.sh scripts/sms_manager.sh cmd/sms_qmi.py"
+for s in $FOR_CHMOD; do
+    if [ -f "$SCRIPT_DIR/$s" ]; then
+        dos2unix "$SCRIPT_DIR/$s"
+        chmod +x "$SCRIPT_DIR/$s"
+    fi
+done
+
+echo "Обновление завершено. Запуск..."
+/www/assisten/bot/run_bot.sh start
+
+exit 0
